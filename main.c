@@ -5,14 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-void error(char *fmt, ...){
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-    exit(1);
-}
-
 typedef enum {
     TK_RESERVED,
     TK_NUM,
@@ -36,7 +28,20 @@ token *next_token(token_kind kind, token *cur, char *p){
     return nxt;
 }
 
-token *tk;
+char *code_head;
+
+void error(token *token, char *fmt, ...){
+    va_list ap;
+    va_start(ap, fmt);
+
+    int pos = token->str - code_head;
+    fprintf(stderr, "%s\n", code_head);
+    fprintf(stderr, "%*s", pos, " ");
+    fprintf(stderr, "^ ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
 
 token *tokenize(char *p){
     token *head = calloc(1, sizeof(token));
@@ -59,15 +64,17 @@ token *tokenize(char *p){
             continue;
         }
         
-        error("can't tokenize");
+        error(cur, "can't tokenize");
     }
     next_token(TK_EOF, cur, p);
     return head->next;
 }
 
+token *tk;
+
 int get_number(){
     if(tk->kind != TK_NUM){
-        error("a first token is not a number");
+        error(tk, "a first token is not a number");
     }
     int val = tk->val;
     tk = tk->next;
@@ -93,6 +100,7 @@ int main(int argc, char **argv){
         return 1;
     }
 
+    code_head = argv[1];
     tk = tokenize(argv[1]);
 
     printf(".intel_syntax noprefix\n");
@@ -109,7 +117,7 @@ int main(int argc, char **argv){
             continue;
         }
 
-        error("unexpected operand");
+        error(tk, "unexpected operand");
     }
     printf("    ret\n");
     return 0;
