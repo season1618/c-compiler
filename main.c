@@ -53,7 +53,7 @@ token *tokenize(char *p){
             p++;
             continue;
         }
-        if(*p == '+' || *p == '-'){
+        if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')'){
             cur = next_token(TK_RESERVED, cur, p);
             p++;
             continue;
@@ -64,17 +64,99 @@ token *tokenize(char *p){
             continue;
         }
         
-        error(cur, "can't tokenize");
+        error(cur, "unexpected character");
     }
     next_token(TK_EOF, cur, p);
     return head->next;
 }
 
+typedef enum {
+    ND_ADD,
+    ND_SUB,
+    ND_MUL,
+    ND_DIV,
+    ND_NUM,
+} node_kind;
+
+typedef struct node node;
+
+struct node {
+    node_kind kind;
+    node *lhs;
+    node *rhs;
+    int val;
+};
+
+node *new_node(node_kind kind, node *lhs, node *rhs){
+    node *nd = (node*)calloc(1, sizeof(node));
+    nd->kind = kind;
+    nd->lhs = lhs;
+    nd->rhs = rhs;
+    return nd;
+}
+
+node *new_node_num(int val){
+    node *nd = (node*)calloc(1, sizeof(node));
+    nd->kind = ND_NUM;
+    nd->val = val;
+    return nd;
+}
+
 token *tk;
+
+node *expr();
+node *mul();
+node *primary();
+int get_number();
+bool expect(char);
+bool is_eof();
+
+node *expr(){
+    node *nd = mul();
+    while(true){
+        if(expect('+')){
+            nd = new_node(ND_ADD, nd, mul());
+            continue;
+        }
+        if(expect('-')){
+            nd = new_node(ND_SUB, nd, mul());
+            continue;
+        }
+        return nd;
+    }
+    return nd;
+}
+
+node *mul(){
+    node *nd = primary();//printf("%d\n",nd->val);
+    while(true){
+        if(expect('*')){
+            nd = new_node(ND_MUL, nd, primary());
+            continue;
+        }
+        if(expect('/')){
+            nd = new_node(ND_DIV, nd, primary());
+            continue;
+        }
+        return nd;
+    }
+    return nd;
+}
+
+node *primary(){
+    if(expect('(')){
+        node *nd = expr();
+        expect(')');
+        return nd;
+    }
+    node *nd = new_node_num(get_number());
+    // printf("%d\n",nd->val);
+    return nd;
+}
 
 int get_number(){
     if(tk->kind != TK_NUM){
-        error(tk, "a first token is not a number");
+        error(tk, "unexpected token");
     }
     int val = tk->val;
     tk = tk->next;
@@ -94,6 +176,35 @@ bool is_eof(){
     return tk->kind == TK_EOF;
 }
 
+void calc(node *nd){
+    if(nd->kind == ND_NUM){
+        printf("    push %d\n", nd->val);
+        return;
+    }
+
+    calc(nd->lhs);
+    calc(nd->rhs);
+    printf("    pop rdi\n");
+    printf("    pop rax\n");
+    
+    switch(nd->kind){
+        case ND_ADD:
+            printf("    add rax, rdi\n");
+            break;
+        case ND_SUB:
+            printf("    sub rax, rdi\n");
+            break;
+        case ND_MUL:
+            printf("    imul rax, rdi\n");
+            break;
+        case ND_DIV:
+            printf("    cqo\n");
+            printf("    idiv rdi\n");
+            break;
+    }
+    printf("    push rax\n");
+}
+
 int main(int argc, char **argv){
     if(argc != 2){
         fprintf(stderr, "incorrect number of arguments");
@@ -102,23 +213,13 @@ int main(int argc, char **argv){
 
     code_head = argv[1];
     tk = tokenize(argv[1]);
+    node *nd = expr();
 
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
-    printf("    mov rax, %d\n", get_number());
-    while(!is_eof()){
-        if(expect('+')){
-            printf("    add rax, %d\n", get_number());
-            continue;
-        }
-        if(expect('-')){
-            printf("    sub rax, %d\n", get_number());
-            continue;
-        }
-
-        error(tk, "unexpected operand");
-    }
+    calc(nd);
+    printf("    pop rax\n");
     printf("    ret\n");
     return 0;
 }
