@@ -106,6 +106,7 @@ token *tk;
 
 node *expr();
 node *mul();
+node *unary();
 node *primary();
 int get_number();
 bool expect(char);
@@ -128,19 +129,29 @@ node *expr(){
 }
 
 node *mul(){
-    node *nd = primary();//printf("%d\n",nd->val);
+    node *nd = unary();
     while(true){
         if(expect('*')){
-            nd = new_node(ND_MUL, nd, primary());
+            nd = new_node(ND_MUL, nd, unary());
             continue;
         }
         if(expect('/')){
-            nd = new_node(ND_DIV, nd, primary());
+            nd = new_node(ND_DIV, nd, unary());
             continue;
         }
         return nd;
     }
     return nd;
+}
+
+node *unary(){
+    if(expect('+')){
+        return primary();
+    }
+    if(expect('-')){
+        return new_node(ND_SUB, new_node_num(0), primary());
+    }
+    return primary();
 }
 
 node *primary(){
@@ -149,9 +160,7 @@ node *primary(){
         expect(')');
         return nd;
     }
-    node *nd = new_node_num(get_number());
-    // printf("%d\n",nd->val);
-    return nd;
+    return new_node_num(get_number());
 }
 
 int get_number(){
