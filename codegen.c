@@ -2,14 +2,41 @@
 
 #include "dcl.h"
 
-void calc(node *nd){
-    if(nd->kind == ND_NUM){
-        printf("    push %d\n", nd->val);
-        return;
+void gen_lval(node *nd){
+    if(nd->kind != ND_LOCAL){
+        fprintf(stderr, "lvalue is not a variable.");
+    }
+    printf("    mov rax, rbp\n");
+    printf("    sub rax, %d\n", nd->offset);
+    printf("    push rax\n");
+}
+
+void gen(node *nd){
+    switch(nd->kind){
+        case ND_ASSIGN:
+            gen_lval(nd->lhs);
+            gen(nd->rhs);
+
+            printf("    pop rdi\n");
+            printf("    pop rax\n");
+            printf("    mov [rax], rdi\n");
+            printf("    push rdi\n");
+            return;
+        case ND_LOCAL:
+            printf("    mov rax, rbp\n");
+            printf("    sub rax, %d\n", nd->offset);
+            printf("    push rax\n");
+            printf("    pop rax\n");
+            printf("    mov rax, [rax]\n");
+            printf("    push rax\n");
+            return;
+        case ND_NUM:
+            printf("    push %d\n", nd->val);
+            return;
     }
 
-    calc(nd->lhs);
-    calc(nd->rhs);
+    gen(nd->lhs);
+    gen(nd->rhs);
     printf("    pop rdi\n");
     printf("    pop rax\n");
     

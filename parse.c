@@ -48,7 +48,7 @@ token *tokenize(char *p){
             p += 2;
             continue;
         }
-        if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '<' || *p == '>' || *p == '(' || *p == ')'){
+        if(*p == ';' || *p == '=' || *p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '<' || *p == '>' || *p == '(' || *p == ')'){
             cur = next_token(TK_RESERVED, cur, p, 1);
             p++;
             continue;
@@ -58,6 +58,12 @@ token *tokenize(char *p){
             char *q = p;
             cur->val = strtol(p, &p, 10);
             cur->len = p - q;
+            continue;
+        }
+        if('a' <= *p && *p <= 'z'){
+            cur = next_token(TK_ID, cur, p, 0);
+            p++;
+            cur->len = 1;
             continue;
         }
         
@@ -91,19 +97,48 @@ node *new_node_num(int val){
     return nd;
 }
 
+node *code[100];
+
+void program();
+node *statement();
 node *expr();
+node *assign();
 node *equal();
 node *relational();
 node *add();
 node *mul();
 node *unary();
 node *primary();
-int get_number();
 bool expect(char*);
+int get_number();
+char *get_id();
 bool is_eof();
 
+void program(){
+    int i = 0;
+    while(!is_eof()){
+        code[i] = statement();
+        i++;
+    }
+    code[i] = NULL;
+}
+
+node *statement(){
+    node *nd = expr();
+    expect(";");
+    return nd;
+}
+
 node *expr(){
-    return equal();
+    return assign();
+}
+
+node *assign(){
+    node *nd = equal();
+    if(expect("=")){
+        nd = new_node(ND_ASSIGN, nd, assign());
+    }
+    return nd;
 }
 
 node *equal(){
@@ -190,6 +225,12 @@ node *primary(){
         expect(")");
         return nd;
     }
+    if(tk->kind == TK_ID){
+        node *nd = calloc(1, sizeof(node));
+        nd->kind = ND_LOCAL;
+        nd->offset = (get_id()[0] - 'a' + 1) * 8;
+        return nd;
+    }
     return new_node_num(get_number());
 }
 
@@ -209,6 +250,15 @@ bool expect(char *op){
     }else{
         return false;
     }
+}
+
+char *get_id(){
+    if(tk->kind != TK_ID){
+        error(tk, "unexpected token");
+    }
+    char *str = tk->str;
+    tk = tk->next;
+    return str;
 }
 
 bool is_eof(){

@@ -15,10 +15,10 @@ assert(){
     fi
 }
 
-assert 1 "1"
-assert 1 "+1"
-assert 6 "2*3"
-assert 3 "6/2"
+assert 1 "1;"
+assert 1 "+1;"
+assert 6 "2*3;"
+assert 3 "6/2;"
 assert 3 "1+2"
 assert 2 "3-1"
 assert 2 "-1+3"
@@ -32,5 +32,6 @@ assert 0 "2 ==3 "
 assert 1 "4* 6== 7+17"
 assert 1 "3*5 <4*4"
 assert 1 "34>=34"
+assert 1 "a = b = 1;"
 
 echo OK

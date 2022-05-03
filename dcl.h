@@ -1,10 +1,13 @@
 typedef enum {
     TK_RESERVED,
+    TK_ID,
     TK_NUM,
     TK_EOF,
 } token_kind;
 typedef struct token token;
 typedef enum {
+    ND_ASSIGN,
+    ND_LOCAL,
     ND_ADD,
     ND_SUB,
     ND_MUL,
@@ -29,10 +32,12 @@ struct node {
     node *lhs;
     node *rhs;
     int val;
+    int offset;
 };
 
 extern token *tokenize(char *p);
-extern node *expr();
-extern void calc(node *nd);
+extern node *code[100];
+extern void program();
+extern void gen(node *nd);
 extern char *code_head;
 extern token *tk;
