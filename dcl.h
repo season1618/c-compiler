@@ -4,7 +4,7 @@ typedef enum {
     TK_NUM,
     TK_EOF,
 } token_kind;
-typedef struct token token;
+
 typedef enum {
     ND_ASSIGN,
     ND_LOCAL,
@@ -18,6 +18,9 @@ typedef enum {
     ND_LEQ,
     ND_NUM,
 } node_kind;
+
+typedef struct token token;
+typedef struct local local;
 typedef struct node node;
 
 struct token {
@@ -27,6 +30,14 @@ struct token {
     char *str;
     int len;
 };
+
+struct local {
+    local *next;
+    char *name;
+    int len;
+    int offset;
+};
+
 struct node {
     node_kind kind;
     node *lhs;
@@ -36,8 +47,9 @@ struct node {
 };
 
 extern token *tokenize(char *p);
-extern node *code[100];
 extern void program();
 extern void gen(node *nd);
 extern char *code_head;
 extern token *tk;
+extern local *local_head;
+extern node *code[100];

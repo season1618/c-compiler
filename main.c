@@ -1,9 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "dcl.h"
 
 char *code_head;
 token *tk;
+local *local_head;
 node *code[100];
 
 int main(int argc, char **argv){
@@ -14,6 +16,7 @@ int main(int argc, char **argv){
 
     code_head = argv[1];
     tk = tokenize(argv[1]);
+    local_head = calloc(1, sizeof(local));
     program();
 
     printf(".intel_syntax noprefix\n");

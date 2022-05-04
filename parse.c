@@ -33,6 +33,19 @@ bool fwdmatch(char *s, char *t){
     return memcmp(s, t, strlen(t)) == 0;
 }
 
+bool isnondigit(char c){
+    return c == '_' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
+}
+
+int len_id(char *p){
+    int len = 0;
+    while(isnondigit(*p) || isdigit(*p)){
+        p++;
+        len++;
+    }
+    return len;
+}
+
 token *tokenize(char *p){
     token *head = calloc(1, sizeof(token));
     head->next = NULL;
@@ -60,10 +73,10 @@ token *tokenize(char *p){
             cur->len = p - q;
             continue;
         }
-        if('a' <= *p && *p <= 'z'){
+        if(isnondigit(*p)){
             cur = next_token(TK_ID, cur, p, 0);
-            p++;
-            cur->len = 1;
+            cur->len = len_id(p);
+            p += cur->len;
             continue;
         }
         
@@ -82,23 +95,6 @@ token *tokenize(char *p){
     return head->next;
 }
 
-node *new_node(node_kind kind, node *lhs, node *rhs){
-    node *nd = calloc(1, sizeof(node));
-    nd->kind = kind;
-    nd->lhs = lhs;
-    nd->rhs = rhs;
-    return nd;
-}
-
-node *new_node_num(int val){
-    node *nd = calloc(1, sizeof(node));
-    nd->kind = ND_NUM;
-    nd->val = val;
-    return nd;
-}
-
-node *code[100];
-
 void program();
 node *statement();
 node *expr();
@@ -113,6 +109,30 @@ bool expect(char*);
 int get_number();
 char *get_id();
 bool is_eof();
+
+local *find_local(){
+    for(local *var = local_head; var; var = var->next){
+        if(var->len == tk->len && memcmp(var->name, tk->str, var->len) == 0){
+            return var;
+        }
+    }
+    return NULL;
+}
+
+node *new_node(node_kind kind, node *lhs, node *rhs){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = kind;
+    nd->lhs = lhs;
+    nd->rhs = rhs;
+    return nd;
+}
+
+node *new_node_num(int val){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_NUM;
+    nd->val = val;
+    return nd;
+}
 
 void program(){
     int i = 0;
@@ -228,7 +248,25 @@ node *primary(){
     if(tk->kind == TK_ID){
         node *nd = calloc(1, sizeof(node));
         nd->kind = ND_LOCAL;
-        nd->offset = (get_id()[0] - 'a' + 1) * 8;
+
+        local *var = find_local();
+        if(var){
+            nd->offset = var->offset;
+        }else{
+            var = calloc(1, sizeof(local));
+            var->next = local_head;
+            var->name = tk->str;
+            var->len = tk->len;
+            var->offset = local_head->offset + 8;
+
+            nd->offset = var->offset;
+            local_head = var;
+            // printf("%c\n", *var->name);
+            // printf("%d\n", var->len);
+            // printf("%d\n", var->offset);
+            // exit(0);
+        }
+        tk = tk->next;
         return nd;
     }
     return new_node_num(get_number());
