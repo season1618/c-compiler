@@ -29,5 +29,6 @@ assert 1 "3*5 <4*4"
 assert 1 "34>=34"
 assert 1 "abc = 1;"
 assert 2 "a = b=2;"
+assert 2 "a = 1; b = a+1;"
 
 echo OK

@@ -25,8 +25,6 @@ void gen(node *nd){
         case ND_LOCAL:
             printf("    mov rax, rbp\n");
             printf("    sub rax, %d\n", nd->offset);
-            printf("    push rax\n");
-            printf("    pop rax\n");
             printf("    mov rax, [rax]\n");
             printf("    push rax\n");
             return;
