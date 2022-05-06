@@ -56,6 +56,11 @@ token *tokenize(char *p){
             p++;
             continue;
         }
+        if(fwdmatch(p, "return") && isspace(p[6])){
+            cur = next_token(TK_RET, cur, p, 6);
+            p += 6;
+            continue;
+        }
         if(fwdmatch(p, "==") || fwdmatch(p, "!=") || fwdmatch(p, "<=") || fwdmatch(p, ">=")){
             cur = next_token(TK_RESERVED, cur, p, 2);
             p += 2;
@@ -144,9 +149,16 @@ void program(){
 }
 
 node *statement(){
-    node *nd = expr();
-    expect(";");
-    return nd;
+    node *nd;
+    if(expect("return")){
+        nd = calloc(1, sizeof(node));
+        nd->kind = ND_RET;
+        nd->lhs = expr();
+    }else{
+        nd = expr();
+    }
+    if(expect(";")) return nd;
+    else error(tk, "expected ';'");
 }
 
 node *expr(){
@@ -282,7 +294,7 @@ int get_number(){
 }
 
 bool expect(char *op){
-    if(tk->kind == TK_RESERVED && tk->len == strlen(op) && memcmp(tk->str, op, tk->len) == 0){
+    if(tk->len == strlen(op) && memcmp(tk->str, op, tk->len) == 0){
         tk = tk->next;
         return true;
     }else{

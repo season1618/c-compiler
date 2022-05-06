@@ -28,6 +28,14 @@ void gen(node *nd){
             printf("    mov rax, [rax]\n");
             printf("    push rax\n");
             return;
+        case ND_RET:
+            gen(nd->lhs);
+
+            printf("    pop rax\n");
+            printf("    mov rsp, rbp\n");
+            printf("    pop rbp\n");
+            printf("    ret\n");
+            return;
         case ND_NUM:
             printf("    push %d\n", nd->val);
             return;

@@ -1,13 +1,15 @@
 typedef enum {
-    TK_RESERVED,
+    TK_RET,
     TK_ID,
     TK_NUM,
+    TK_RESERVED,
     TK_EOF,
 } token_kind;
 
 typedef enum {
     ND_ASSIGN,
     ND_LOCAL,
+    ND_RET,
     ND_ADD,
     ND_SUB,
     ND_MUL,
