@@ -90,7 +90,7 @@ token *tokenize(char *p){
             p += 2;
             continue;
         }
-        if(*p == ';' || *p == '=' || *p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '<' || *p == '>' || *p == '(' || *p == ')'){
+        if(*p == ';' || *p == '=' || *p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '<' || *p == '>' || *p == '(' || *p == ')' || *p == '{' || *p == '}'){
             cur = next_token(TK_RESERVED, cur, p, 1);
             p++;
             continue;
@@ -174,12 +174,8 @@ void program(){
 
 node *stmt(){
     node *nd = calloc(1, sizeof(node));
-    if(expect("return")){
-        nd->kind = ND_RET;
-        nd->lhs = expr();
-        if(!expect(";")) error(tk, "expected ';'");
-    }
-    else if(expect("if")){
+    
+    if(expect("if")){
         if(!expect("(")) error(tk, "expected '('");
 
         nd->kind = ND_IF;
@@ -223,6 +219,20 @@ node *stmt(){
         if(!expect(")")) error(tk, "expected ')'");
 
         nd->elms[3] = stmt();
+    }
+    else if(expect("return")){
+        nd->kind = ND_RET;
+        nd->lhs = expr();
+        if(!expect(";")) error(tk, "expected ';'");
+    }
+    else if(expect("{")){
+        nd->kind = ND_BLOCK;
+        nd->head = stmt();
+        node *cur = nd->head;
+        while(!expect("}")){
+            cur->next = stmt();
+            cur = cur->next;
+        }
     }
     else{
         nd = expr();

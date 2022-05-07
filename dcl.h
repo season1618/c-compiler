@@ -11,13 +11,14 @@ typedef enum {
 } token_kind;
 
 typedef enum {
-    ND_ASSIGN,
-    ND_LOCAL,
     ND_IF,
     ND_WHILE,
     ND_FOR,
+    ND_BLOCK,
     ND_RET,
 
+    ND_ASSIGN,
+    ND_LOCAL,
     ND_ADD,
     ND_SUB,
     ND_MUL,
@@ -50,11 +51,13 @@ struct local {
 
 struct node {
     node_kind kind;
-    node *lhs;
-    node *rhs;
-    node **elms;
-    int val;
-    int offset;
+    node **elms; // ND_IF, ND_WHILE, ND_FOR
+    node *head; // ND_BLOCK
+    node *next; // ND_BLOCK
+    node *lhs; // operator
+    node *rhs; // operator
+    int offset; // ND_LOCAL
+    int val; // ND_NUM
 };
 
 extern token *tokenize(char *p);
