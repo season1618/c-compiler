@@ -29,17 +29,21 @@ void error(token *token, char *fmt, ...){
     exit(1);
 }
 
+bool isalpha_(char c){
+    return c == '_' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
+}
+
+bool isalnum_(char c){
+    return isalpha_(c) || isdigit(c);
+}
+
 bool fwdmatch(char *s, char *t){
     return memcmp(s, t, strlen(t)) == 0;
 }
 
-bool isnondigit(char c){
-    return c == '_' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
-}
-
 int len_id(char *p){
     int len = 0;
-    while(isnondigit(*p) || isdigit(*p)){
+    while(isalnum_(*p)){
         p++;
         len++;
     }
@@ -56,9 +60,29 @@ token *tokenize(char *p){
             p++;
             continue;
         }
-        if(fwdmatch(p, "return") && isspace(p[6])){
+        if(fwdmatch(p, "return") && !isalnum_(p[6])){
             cur = next_token(TK_RET, cur, p, 6);
             p += 6;
+            continue;
+        }
+        if(fwdmatch(p, "if") && !isalnum_(p[2])){
+            cur = next_token(TK_IF, cur, p, 2);
+            p += 2;
+            continue;
+        }
+        if(fwdmatch(p, "else") && !isalnum_(p[4])){
+            cur = next_token(TK_ELSE, cur, p, 4);
+            p += 4;
+            continue;
+        }
+        if(fwdmatch(p, "while") && !isalnum_(p[5])){
+            cur = next_token(TK_WHILE, cur, p, 5);
+            p += 5;
+            continue;
+        }
+        if(fwdmatch(p, "for") && !isalnum_(p[3])){
+            cur = next_token(TK_FOR, cur, p, 3);
+            p += 3;
             continue;
         }
         if(fwdmatch(p, "==") || fwdmatch(p, "!=") || fwdmatch(p, "<=") || fwdmatch(p, ">=")){
@@ -78,7 +102,7 @@ token *tokenize(char *p){
             cur->len = p - q;
             continue;
         }
-        if(isnondigit(*p)){
+        if(isalpha_(*p)){
             cur = next_token(TK_ID, cur, p, 0);
             cur->len = len_id(p);
             p += cur->len;
@@ -101,7 +125,7 @@ token *tokenize(char *p){
 }
 
 void program();
-node *statement();
+node *stmt();
 node *expr();
 node *assign();
 node *equal();
@@ -142,23 +166,69 @@ node *new_node_num(int val){
 void program(){
     int i = 0;
     while(!is_eof()){
-        code[i] = statement();
+        code[i] = stmt();
         i++;
     }
     code[i] = NULL;
 }
 
-node *statement(){
-    node *nd;
+node *stmt(){
+    node *nd = calloc(1, sizeof(node));
     if(expect("return")){
-        nd = calloc(1, sizeof(node));
         nd->kind = ND_RET;
         nd->lhs = expr();
-    }else{
-        nd = expr();
+        if(!expect(";")) error(tk, "expected ';'");
     }
-    if(expect(";")) return nd;
-    else error(tk, "expected ';'");
+    else if(expect("if")){
+        if(!expect("(")) error(tk, "expected '('");
+
+        nd->kind = ND_IF;
+        nd->elms = calloc(3, sizeof(node));
+        nd->elms[0] = expr();
+
+        if(!expect(")")) error(tk, "expected ')'");
+
+        nd->elms[1] = stmt();
+
+        if(expect("else")){
+            nd->elms[2] = stmt();
+        }
+    }
+    else if(expect("while")){
+        if(!expect("(")) error(tk, "expected '('");
+
+        nd->kind = ND_WHILE;
+        nd->elms = calloc(2, sizeof(node));
+        nd->elms[0] = expr();
+
+        if(!expect(")")) error(tk, "expected ')'");
+
+        nd->elms[1] = stmt();
+    }
+    else if(expect("for")){
+        if(!expect("(")) error(tk, "expected '('");
+
+        nd->kind = ND_FOR;
+        nd->elms = calloc(4, sizeof(node));
+        nd->elms[0] = expr();
+
+        if(!expect(";")) error(tk, "expected ';'");
+
+        nd->elms[1] = expr();
+
+        if(!expect(";")) error(tk, "expected ';'");
+
+        nd->elms[2] = expr();
+
+        if(!expect(")")) error(tk, "expected ')'");
+
+        nd->elms[3] = stmt();
+    }
+    else{
+        nd = expr();
+        if(!expect(";")) error(tk, "expected ';'");
+    }
+    return nd;
 }
 
 node *expr(){

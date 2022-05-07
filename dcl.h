@@ -1,4 +1,8 @@
 typedef enum {
+    TK_IF,
+    TK_ELSE,
+    TK_WHILE,
+    TK_FOR,
     TK_RET,
     TK_ID,
     TK_NUM,
@@ -9,7 +13,11 @@ typedef enum {
 typedef enum {
     ND_ASSIGN,
     ND_LOCAL,
+    ND_IF,
+    ND_WHILE,
+    ND_FOR,
     ND_RET,
+
     ND_ADD,
     ND_SUB,
     ND_MUL,
@@ -44,6 +52,7 @@ struct node {
     node_kind kind;
     node *lhs;
     node *rhs;
+    node **elms;
     int val;
     int offset;
 };
