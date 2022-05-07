@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -7,6 +8,19 @@ char *code_head;
 token *tk;
 local *local_head;
 node *code[100];
+
+void error(token *token, char *fmt, ...){
+    va_list ap;
+    va_start(ap, fmt);
+
+    int pos = token->str - code_head;
+    fprintf(stderr, "%s\n", code_head);
+    fprintf(stderr, "%*s", pos, " ");
+    fprintf(stderr, "^ ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
 
 int main(int argc, char **argv){
     if(argc != 2){
