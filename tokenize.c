@@ -11,18 +11,6 @@ int NUM_PUNCT = 18;
 char *keywords[] = {"return", "if", "else", "while", "for"};
 char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", ";", "<", ">", "(", ")", "{", "}", "[", "]"};
 
-token *next_token(token_kind kind, token *cur, int len){
-    token *nxt = calloc(1, sizeof(token));
-    nxt->kind = kind;
-    nxt->str = p;
-    nxt->len = len;
-
-    cur->next = nxt;
-    p += len;
-
-    return nxt;
-}
-
 bool isalpha_(char c){
     return c == '_' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
 }
@@ -35,13 +23,29 @@ bool fwdmatch(char *s, char *t){
     return memcmp(s, t, strlen(t)) == 0;
 }
 
-int len_id(){
-    int len = 0;
+token *next_token(token_kind kind, token *cur, int len){
+    token *nxt = calloc(1, sizeof(token));
+    nxt->kind = kind;
+    nxt->str = p;
+    nxt->len = len;
+
+    cur->next = nxt;
+    p += len;
+
+    return nxt;
+}
+
+token *next_identifier(token *cur){
+    token *nxt = calloc(1, sizeof(token));
+    nxt->kind = TK_ID;
+    nxt->str = p;
+    nxt->len = 0;
     while(isalnum_(*p)){
         p++;
-        len++;
+        nxt->len++;
     }
-    return len;
+    cur->next = nxt;
+    return nxt;
 }
 
 token *tokenize(char *code_head){
@@ -81,8 +85,7 @@ token *tokenize(char *code_head){
             continue;
         }
         if(isalpha_(*p)){
-            cur = next_token(TK_ID, cur, 0);
-            cur->len = len_id();
+            cur = next_identifier(cur);
             continue;
         }
         
