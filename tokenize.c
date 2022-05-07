@@ -5,6 +5,11 @@
 
 #include "dcl.h"
 
+int NUM_KEYWORD = 5;
+int NUM_PUNCT = 18;
+char *keywords[] = {"return", "if", "else", "while", "for"};
+char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", ";", "<", ">", "(", ")", "{", "}", "[", "]"};
+
 token *next_token(token_kind kind, token *cur, char *p, int len){
     token *nxt = calloc(1, sizeof(token));
     nxt->kind = kind;
@@ -41,45 +46,29 @@ token *tokenize(char *p){
     token *cur = head;
 
     while(*p){
+        bool flag = false;
         if(isspace(*p)){
             p++;
             continue;
         }
-        if(fwdmatch(p, "return") && !isalnum_(p[6])){
-            cur = next_token(TK_RET, cur, p, 6);
-            p += 6;
-            continue;
+        for(int i = 0; i < NUM_KEYWORD; i++){
+            if(fwdmatch(p, keywords[i]) && !isalnum_(p[strlen(keywords[i])])){
+                cur = next_token(TK_KEYWORD, cur, p, strlen(keywords[i]));
+                p += strlen(keywords[i]);
+                flag = true;
+                break;
+            }
         }
-        if(fwdmatch(p, "if") && !isalnum_(p[2])){
-            cur = next_token(TK_IF, cur, p, 2);
-            p += 2;
-            continue;
+        if(flag) continue;
+        for(int i = 0; i < NUM_PUNCT; i++){
+            if(fwdmatch(p, puncts[i])){
+                cur = next_token(TK_PUNCT, cur, p, strlen(puncts[i]));
+                p += strlen(puncts[i]);
+                flag = true;
+                break;
+            }
         }
-        if(fwdmatch(p, "else") && !isalnum_(p[4])){
-            cur = next_token(TK_ELSE, cur, p, 4);
-            p += 4;
-            continue;
-        }
-        if(fwdmatch(p, "while") && !isalnum_(p[5])){
-            cur = next_token(TK_WHILE, cur, p, 5);
-            p += 5;
-            continue;
-        }
-        if(fwdmatch(p, "for") && !isalnum_(p[3])){
-            cur = next_token(TK_FOR, cur, p, 3);
-            p += 3;
-            continue;
-        }
-        if(fwdmatch(p, "==") || fwdmatch(p, "!=") || fwdmatch(p, "<=") || fwdmatch(p, ">=")){
-            cur = next_token(TK_RESERVED, cur, p, 2);
-            p += 2;
-            continue;
-        }
-        if(*p == ';' || *p == '=' || *p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '<' || *p == '>' || *p == '(' || *p == ')' || *p == '{' || *p == '}'){
-            cur = next_token(TK_RESERVED, cur, p, 1);
-            p++;
-            continue;
-        }
+        if(flag) continue;
         if(isdigit(*p)){
             cur = next_token(TK_NUM, cur, p, 0);
             char *q = p;

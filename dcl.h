@@ -1,12 +1,8 @@
 typedef enum {
-    TK_IF,
-    TK_ELSE,
-    TK_WHILE,
-    TK_FOR,
-    TK_RET,
+    TK_KEYWORD,
     TK_ID,
     TK_NUM,
-    TK_RESERVED,
+    TK_PUNCT,
     TK_EOF,
 } token_kind;
 
@@ -64,7 +60,6 @@ extern void error(token *token, char *fmt, ...);
 extern token *tokenize(char *p);
 extern void program();
 extern void gen(node *nd);
-extern char *code_head;
 extern token *tk;
 extern local *local_head;
-extern node *code[100];
+extern node *prg[100];

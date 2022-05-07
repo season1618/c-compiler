@@ -7,7 +7,7 @@
 char *code_head;
 token *tk;
 local *local_head;
-node *code[100];
+node *prg[100];
 
 void error(token *token, char *fmt, ...){
     va_list ap;
@@ -29,7 +29,7 @@ int main(int argc, char **argv){
     }
 
     code_head = argv[1];
-    tk = tokenize(argv[1]);
+    tk = tokenize(code_head);
     local_head = calloc(1, sizeof(local));
     program();
 
@@ -41,8 +41,8 @@ int main(int argc, char **argv){
     printf("    mov rbp, rsp\n");
     printf("    sub rsp, 208\n");
 
-    for(int i = 0; code[i]; i++){
-        gen(code[i]);
+    for(int i = 0; prg[i]; i++){
+        gen(prg[i]);
         printf("    pop rax\n");
     }
 

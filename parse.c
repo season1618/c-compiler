@@ -72,10 +72,10 @@ node *node_num(int val){
 void program(){
     int i = 0;
     while(!is_eof()){
-        code[i] = stmt();
+        prg[i] = stmt();
         i++;
     }
-    code[i] = NULL;
+    prg[i] = NULL;
 }
 
 node *stmt(){
