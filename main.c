@@ -5,9 +5,7 @@
 #include "dcl.h"
 
 char *code_head;
-token *tk;
 local *local_head;
-node *prg[100];
 
 void error(token *token, char *fmt, ...){
     va_list ap;
@@ -29,9 +27,9 @@ int main(int argc, char **argv){
     }
 
     code_head = argv[1];
-    tk = tokenize(code_head);
+    token *token_head = tokenize(code_head);
     local_head = calloc(1, sizeof(local));
-    program();
+    node **prg = program(token_head);
 
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");

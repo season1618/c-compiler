@@ -4,6 +4,8 @@
 
 #include "dcl.h"
 
+token *tk;
+
 node *stmt();
 node *expr();
 node *assign();
@@ -69,13 +71,16 @@ node *node_num(int val){
     return nd;
 }
 
-void program(){
+node **program(token *token_head){
+    tk = token_head;
+    node **prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
         prg[i] = stmt();
         i++;
     }
     prg[i] = NULL;
+    return prg;
 }
 
 node *stmt(){

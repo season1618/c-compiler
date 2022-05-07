@@ -58,8 +58,6 @@ struct node {
 
 extern void error(token *token, char *fmt, ...);
 extern token *tokenize(char *p);
-extern void program();
+extern node **program();
 extern void gen(node *nd);
-extern token *tk;
 extern local *local_head;
-extern node *prg[100];
