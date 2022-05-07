@@ -60,7 +60,7 @@ struct node {
     int val; // ND_NUM
 };
 
-void error(token *token, char *fmt, ...);
+extern void error(token *token, char *fmt, ...);
 extern token *tokenize(char *p);
 extern void program();
 extern void gen(node *nd);

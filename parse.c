@@ -4,7 +4,6 @@
 
 #include "dcl.h"
 
-void program();
 node *stmt();
 node *expr();
 node *assign();
@@ -14,10 +13,37 @@ node *add();
 node *mul();
 node *unary();
 node *primary();
-bool expect(char*);
-int get_number();
-char *get_id();
-bool is_eof();
+
+int get_number(){
+    if(tk->kind != TK_NUM){
+        error(tk, "unexpected token");
+    }
+    int val = tk->val;
+    tk = tk->next;
+    return val;
+}
+
+bool expect(char *op){
+    if(tk->len == strlen(op) && memcmp(tk->str, op, tk->len) == 0){
+        tk = tk->next;
+        return true;
+    }else{
+        return false;
+    }
+}
+
+char *get_id(){
+    if(tk->kind != TK_ID){
+        error(tk, "unexpected token");
+    }
+    char *str = tk->str;
+    tk = tk->next;
+    return str;
+}
+
+bool is_eof(){
+    return tk->kind == TK_EOF;
+}
 
 local *find_local(){
     for(local *var = local_head; var; var = var->next){
@@ -28,7 +54,7 @@ local *find_local(){
     return NULL;
 }
 
-node *new_node(node_kind kind, node *lhs, node *rhs){
+node *node_operator(node_kind kind, node *lhs, node *rhs){
     node *nd = calloc(1, sizeof(node));
     nd->kind = kind;
     nd->lhs = lhs;
@@ -36,7 +62,7 @@ node *new_node(node_kind kind, node *lhs, node *rhs){
     return nd;
 }
 
-node *new_node_num(int val){
+node *node_num(int val){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_NUM;
     nd->val = val;
@@ -128,7 +154,7 @@ node *expr(){
 node *assign(){
     node *nd = equal();
     if(expect("=")){
-        nd = new_node(ND_ASSIGN, nd, assign());
+        nd = node_operator(ND_ASSIGN, nd, assign());
     }
     return nd;
 }
@@ -137,11 +163,11 @@ node *equal(){
     node *nd = relational();
     while(true){
         if(expect("==")){
-            nd = new_node(ND_EQ, nd, relational());
+            nd = node_operator(ND_EQ, nd, relational());
             continue;
         }
         if(expect("!=")){
-            nd = new_node(ND_NEQ, nd, relational());
+            nd = node_operator(ND_NEQ, nd, relational());
             continue;
         }
         return nd;
@@ -152,19 +178,19 @@ node *relational(){
     node *nd = add();
     while(true){
         if(expect("<")){
-            nd = new_node(ND_LT, nd, add());
+            nd = node_operator(ND_LT, nd, add());
             continue;
         }
         if(expect("<=")){
-            nd = new_node(ND_LEQ, nd, add());
+            nd = node_operator(ND_LEQ, nd, add());
             continue;
         }
         if(expect(">")){
-            nd = new_node(ND_LT, add(), nd);
+            nd = node_operator(ND_LT, add(), nd);
             continue;
         }
         if(expect(">=")){
-            nd = new_node(ND_LEQ, add(), nd);
+            nd = node_operator(ND_LEQ, add(), nd);
             continue;
         }
         return nd;
@@ -175,11 +201,11 @@ node *add(){
     node *nd = mul();
     while(true){
         if(expect("+")){
-            nd = new_node(ND_ADD, nd, mul());
+            nd = node_operator(ND_ADD, nd, mul());
             continue;
         }
         if(expect("-")){
-            nd = new_node(ND_SUB, nd, mul());
+            nd = node_operator(ND_SUB, nd, mul());
             continue;
         }
         return nd;
@@ -190,11 +216,11 @@ node *mul(){
     node *nd = unary();
     while(true){
         if(expect("*")){
-            nd = new_node(ND_MUL, nd, unary());
+            nd = node_operator(ND_MUL, nd, unary());
             continue;
         }
         if(expect("/")){
-            nd = new_node(ND_DIV, nd, unary());
+            nd = node_operator(ND_DIV, nd, unary());
             continue;
         }
         return nd;
@@ -206,7 +232,7 @@ node *unary(){
         return unary();
     }
     if(expect("-")){
-        return new_node(ND_SUB, new_node_num(0), unary());
+        return node_operator(ND_SUB, node_num(0), unary());
     }
     return primary();
 }
@@ -241,36 +267,5 @@ node *primary(){
         tk = tk->next;
         return nd;
     }
-    return new_node_num(get_number());
-}
-
-int get_number(){
-    if(tk->kind != TK_NUM){
-        error(tk, "unexpected token");
-    }
-    int val = tk->val;
-    tk = tk->next;
-    return val;
-}
-
-bool expect(char *op){
-    if(tk->len == strlen(op) && memcmp(tk->str, op, tk->len) == 0){
-        tk = tk->next;
-        return true;
-    }else{
-        return false;
-    }
-}
-
-char *get_id(){
-    if(tk->kind != TK_ID){
-        error(tk, "unexpected token");
-    }
-    char *str = tk->str;
-    tk = tk->next;
-    return str;
-}
-
-bool is_eof(){
-    return tk->kind == TK_EOF;
+    return node_num(get_number());
 }
