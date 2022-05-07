@@ -13,11 +13,11 @@ void gen_lval(node *nd){
     printf("    push rax\n");
 }
 
-void gen(node *nd){
+void gen_stmt(node *nd){
     switch(nd->kind){
         int l1, l2;
         case ND_IF:
-            gen(nd->elms[0]);
+            gen_stmt(nd->elms[0]);
             
             printf("    pop rax\n");
             printf("    cmp rax, 0\n");
@@ -28,12 +28,12 @@ void gen(node *nd){
                 label_num += 2;
 
                 printf("    je .L%d\n", l1);
-                gen(nd->elms[1]);
+                gen_stmt(nd->elms[1]);
                 printf("    jmp .L%d\n", l2);
                 
                 printf(".L%d:\n", l1);
                 
-                gen(nd->elms[2]);
+                gen_stmt(nd->elms[2]);
                 
                 printf(".L%d:\n", l2);
             }else{
@@ -41,7 +41,7 @@ void gen(node *nd){
                 label_num += 1;
 
                 printf("    je .L%d\n", l1);
-                gen(nd->elms[1]);
+                gen_stmt(nd->elms[1]);
 
                 printf(".L%d:\n", l1);
             }
@@ -53,11 +53,11 @@ void gen(node *nd){
 
             printf(".L%d:\n", l1);
 
-            gen(nd->elms[0]);
+            gen_stmt(nd->elms[0]);
             printf("    pop rax\n");
             printf("    cmp rax, 0\n");
             printf("    je .L%d\n", l2);
-            gen(nd->elms[1]);
+            gen_stmt(nd->elms[1]);
             printf("    jmp .L%d\n", l1);
             
             printf(".L%d:\n", l2);
@@ -67,28 +67,28 @@ void gen(node *nd){
             l2 = label_num + 1;
             label_num += 2;
 
-            gen(nd->elms[0]);
+            gen_stmt(nd->elms[0]);
 
             printf(".L%d:\n", l1);
 
-            gen(nd->elms[1]);
+            gen_stmt(nd->elms[1]);
             printf("    pop rax\n");
             printf("    cmp rax, 0\n");
             printf("    je .L%d\n", l2);
-            gen(nd->elms[3]);
-            gen(nd->elms[2]);
+            gen_stmt(nd->elms[3]);
+            gen_stmt(nd->elms[2]);
             printf("    jmp .L%d\n", l1);
 
             printf(".L%d:\n", l2);
             return;
         case ND_BLOCK:
             for(node *cur = nd->head; cur; cur = cur->next){
-                gen(cur);
+                gen_stmt(cur);
                 printf("    pop rax\n");
             }
             return;
         case ND_RET:
-            gen(nd->lhs);
+            gen_stmt(nd->lhs);
 
             printf("    pop rax\n");
             printf("    mov rsp, rbp\n");
@@ -97,7 +97,7 @@ void gen(node *nd){
             return;
         case ND_ASSIGN:
             gen_lval(nd->lhs);
-            gen(nd->rhs);
+            gen_stmt(nd->rhs);
 
             printf("    pop rdi\n");
             printf("    pop rax\n");
@@ -115,8 +115,8 @@ void gen(node *nd){
             return;
     }
 
-    gen(nd->lhs);
-    gen(nd->rhs);
+    gen_stmt(nd->lhs);
+    gen_stmt(nd->rhs);
     printf("    pop rdi\n");
     printf("    pop rax\n");
     
@@ -156,4 +156,23 @@ void gen(node *nd){
             break;
     }
     printf("    push rax\n");
+}
+
+void gen_code(node **prg){
+    printf(".intel_syntax noprefix\n");
+    printf(".global main\n");
+    printf("main:\n");
+    
+    printf("    push rbp\n");
+    printf("    mov rbp, rsp\n");
+    printf("    sub rsp, 208\n");
+
+    for(int i = 0; prg[i]; i++){
+        gen_stmt(prg[i]);
+        printf("    pop rax\n");
+    }
+
+    printf("    mov rsp, rbp\n");
+    printf("    pop rbp\n");
+    printf("    ret\n");
 }

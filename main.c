@@ -28,22 +28,6 @@ int main(int argc, char **argv){
     code_head = argv[1];
     token *token_head = tokenize(code_head);
     node **prg = program(token_head);
-
-    printf(".intel_syntax noprefix\n");
-    printf(".global main\n");
-    printf("main:\n");
-    
-    printf("    push rbp\n");
-    printf("    mov rbp, rsp\n");
-    printf("    sub rsp, 208\n");
-
-    for(int i = 0; prg[i]; i++){
-        gen(prg[i]);
-        printf("    pop rax\n");
-    }
-
-    printf("    mov rsp, rbp\n");
-    printf("    pop rbp\n");
-    printf("    ret\n");
+    gen_code(prg);
     return 0;
 }
