@@ -11,12 +11,12 @@ int NUM_PUNCT = 18;
 char *keywords[] = {"return", "if", "else", "while", "for"};
 char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", ";", "<", ">", "(", ")", "{", "}", "[", "]"};
 
-bool isalpha_(char c){
+bool is_alpha(char c){
     return c == '_' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
 }
 
-bool isalnum_(char c){
-    return isalpha_(c) || isdigit(c);
+bool is_alnum(char c){
+    return is_alpha(c) || isdigit(c);
 }
 
 bool fwdmatch(char *s, char *t){
@@ -40,7 +40,7 @@ token *next_identifier(token *cur){
     nxt->kind = TK_ID;
     nxt->str = p;
     nxt->len = 0;
-    while(isalnum_(*p)){
+    while(is_alnum(*p)){
         p++;
         nxt->len++;
     }
@@ -62,7 +62,7 @@ token *tokenize(char *code_head){
             continue;
         }
         for(int i = 0; i < NUM_KEYWORD; i++){
-            if(fwdmatch(p, keywords[i]) && !isalnum_(p[strlen(keywords[i])])){
+            if(fwdmatch(p, keywords[i]) && !is_alnum(p[strlen(keywords[i])])){
                 cur = next_token(TK_KEYWORD, cur, strlen(keywords[i]));
                 flag = true;
                 break;
@@ -84,7 +84,7 @@ token *tokenize(char *code_head){
             cur->len = p - q;
             continue;
         }
-        if(isalpha_(*p)){
+        if(is_alpha(*p)){
             cur = next_identifier(cur);
             continue;
         }
