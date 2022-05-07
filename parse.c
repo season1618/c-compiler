@@ -5,6 +5,7 @@
 #include "dcl.h"
 
 token *tk;
+local *local_head;
 
 node *stmt();
 node *expr();
@@ -73,6 +74,8 @@ node *node_num(int val){
 
 node **program(token *token_head){
     tk = token_head;
+    local_head = calloc(1, sizeof(local));
+    
     node **prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
