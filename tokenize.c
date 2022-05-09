@@ -3,13 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include<stdio.h>
+
 #include "dcl.h"
 
 char *p;
 int NUM_KEYWORD = 5;
-int NUM_PUNCT = 18;
+int NUM_PUNCT = 21;
 char *keywords[] = {"return", "if", "else", "while", "for"};
-char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", ";", "<", ">", "(", ")", "{", "}", "[", "]"};
+char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", ":", ";", ",", ".", "<", ">", "(", ")", "{", "}", "[", "]"};
 
 bool is_alpha(char c){
     return c == '_' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
@@ -88,10 +90,11 @@ token *tokenize(char *code_head){
             cur = next_identifier(cur);
             continue;
         }
-        
         error(cur, "invalid token");
     }
     next_token(TK_EOF, cur, 0);
+
+    
     // cur = head->next;
     // while(cur->kind != TK_EOF){
     //     for(int i = 0; i < cur->len; i++){

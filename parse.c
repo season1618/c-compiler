@@ -252,16 +252,33 @@ node *primary(){
         expect(")");
         return nd;
     }
-    if(tk->kind == TK_ID && tk->next->str[0] == '('){
+    if(tk->kind == TK_ID && tk->next->kind != TK_EOF && tk->next->str[0] == '('){
         node *nd = calloc(1, sizeof(node));
+        func *fn = calloc(1, sizeof(func));
         nd->kind = ND_FUNC;
-        nd->fn = calloc(1, sizeof(func));
-        nd->fn->name = tk->str;
-        nd->fn->len = tk->len;
+        nd->fn = fn;
+        fn->name = tk->str;
+        fn->len = tk->len;
+        fn->num = 0;
 
         tk = tk->next;
         expect("(");
-        expect(")");
+        node *cur;
+        while(!expect(")")){
+            cur = expr();
+            cur->next = fn->args_head;
+            fn->args_head = cur;
+            fn->num++;
+            if(expect(",")){
+                continue;
+            }else{
+                if(expect(")")){
+                    break;
+                }else{
+                    error(tk, "expected ',' or ')'");
+                }
+            }
+        }
         return nd;
     }
     if(tk->kind == TK_ID){

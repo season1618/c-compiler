@@ -3,6 +3,7 @@
 #include "dcl.h"
 
 int label_num = 2;
+char *arg_reg_int[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 void gen_lval(node *nd){
     if(nd->kind != ND_LOCAL){
@@ -16,7 +17,6 @@ void gen_lval(node *nd){
 void gen_stmt(node *nd){
     switch(nd->kind){
         int l1, l2;
-        func *fn;
         case ND_IF:
             gen_stmt(nd->elms[0]);
             
@@ -105,13 +105,16 @@ void gen_stmt(node *nd){
             printf("    mov [rax], rdi\n");
             printf("    push rdi\n");
             return;
-        case ND_FUNC:
-            fn = nd->fn;
-            // for(int i = 0; i < fn->num; i++){
-            //     switch(i){
-            //         case 0:
-            //     }
-            // }
+        case ND_FUNC:{
+            func *fn = nd->fn;
+            int i = fn->num - 1;
+            node *cur = fn->args_head;
+            while(cur){
+                gen_stmt(cur);
+                printf("    pop %s\n", arg_reg_int[i]);
+                cur = cur->next;
+                i--;
+            }
             printf("    push rsp\n");
             printf("    push [rsp]\n");
             printf("    and rsp, -0x10\n");
@@ -120,6 +123,7 @@ void gen_stmt(node *nd){
             printf("    mov rsp, [rsp]\n");
             printf("    push rax\n");
             return;
+        }
         case ND_LOCAL:
             printf("    mov rax, rbp\n");
             printf("    sub rax, %d\n", nd->offset);

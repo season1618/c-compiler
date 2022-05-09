@@ -50,7 +50,7 @@ struct local {
 struct func {
     char *name;
     int len;
-    node **args;
+    node *args_head;
     int num;
 };
 
