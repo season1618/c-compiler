@@ -14,6 +14,7 @@ typedef enum {
     ND_RET,
 
     ND_ASSIGN,
+    ND_FUNC,
     ND_LOCAL,
     ND_ADD,
     ND_SUB,
@@ -27,6 +28,7 @@ typedef enum {
 } node_kind;
 
 typedef struct token token;
+typedef struct func func;
 typedef struct local local;
 typedef struct node node;
 
@@ -45,13 +47,19 @@ struct local {
     int offset;
 };
 
+struct func {
+    char *name;
+    int len;
+    node **args;
+    int num;
+};
+
 struct node {
     node_kind kind;
     node **elms; // ND_IF, ND_WHILE, ND_FOR
-    node *head; // ND_BLOCK
-    node *next; // ND_BLOCK
-    node *lhs; // operator
-    node *rhs; // operator
+    node *head, *next; // ND_BLOCK
+    node *lhs, *rhs; // operator
+    func *fn; // ND_FUNC
     int offset; // ND_LOCAL
     int val; // ND_NUM
 };

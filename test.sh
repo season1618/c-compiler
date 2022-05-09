@@ -3,7 +3,7 @@ assert(){
     input="$2"
 
     ./main "$input" > tmp.s
-    cc -o tmp tmp.s
+    cc -o tmp tmp.s foo.o
     ./tmp
     actual="$?"
 
@@ -36,5 +36,6 @@ assert 1 "if(1== 3) 0; else 1;"
 assert 1 "a = 1; if(a==0){return a;}else if(a==1){return a;}else{return a;}"
 assert 4 "a = 0; while(a<4) a=a+1; return a;"
 assert 4 "a = 0; for(i = 0; i<4;i=i+1) a=a+1; return a;"
+assert 1 "a = 0; foo(); return 1;"
 
 echo OK

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "dcl.h"
 
@@ -75,7 +76,7 @@ node *node_num(int val){
 node **program(token *token_head){
     tk = token_head;
     local_head = calloc(1, sizeof(local));
-    
+
     node **prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
@@ -248,6 +249,18 @@ node *unary(){
 node *primary(){
     if(expect("(")){
         node *nd = expr();
+        expect(")");
+        return nd;
+    }
+    if(tk->kind == TK_ID && tk->next->str[0] == '('){
+        node *nd = calloc(1, sizeof(node));
+        nd->kind = ND_FUNC;
+        nd->fn = calloc(1, sizeof(func));
+        nd->fn->name = tk->str;
+        nd->fn->len = tk->len;
+
+        tk = tk->next;
+        expect("(");
         expect(")");
         return nd;
     }

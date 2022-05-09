@@ -16,6 +16,7 @@ void gen_lval(node *nd){
 void gen_stmt(node *nd){
     switch(nd->kind){
         int l1, l2;
+        func *fn;
         case ND_IF:
             gen_stmt(nd->elms[0]);
             
@@ -103,6 +104,21 @@ void gen_stmt(node *nd){
             printf("    pop rax\n");
             printf("    mov [rax], rdi\n");
             printf("    push rdi\n");
+            return;
+        case ND_FUNC:
+            fn = nd->fn;
+            // for(int i = 0; i < fn->num; i++){
+            //     switch(i){
+            //         case 0:
+            //     }
+            // }
+            printf("    push rsp\n");
+            printf("    push [rsp]\n");
+            printf("    and rsp, -0x10\n");
+            printf("    call %.*s\n", fn->len, fn->name);
+            printf("    add rsp, 8\n");
+            printf("    mov rsp, [rsp]\n");
+            printf("    push rax\n");
             return;
         case ND_LOCAL:
             printf("    mov rax, rbp\n");
