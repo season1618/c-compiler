@@ -107,19 +107,33 @@ void gen_stmt(node *nd){
             return;
         case ND_FUNC:{
             func *fn = nd->fn;
+            int num_stack_var;
+            if(fn->num > 6) num_stack_var = fn->num - 6;
+            else num_stack_var = 0;
+
+            printf("    push rsp\n");
+            printf("    push [rsp]\n");
+            if(num_stack_var % 2 == 0){
+                printf("    add rsp, 8\n");
+                printf("    and rsp, -0x10\n");
+            }else{
+                printf("    and rsp, -0x10\n");
+                printf("    add rsp, 8\n");
+            }
+
             int i = fn->num - 1;
             node *cur = fn->args_head;
             while(cur){
                 gen_stmt(cur);
-                printf("    pop %s\n", arg_reg_int[i]);
+                if(i < 6) printf("    pop %s\n", arg_reg_int[i]);
                 cur = cur->next;
                 i--;
             }
-            printf("    push rsp\n");
-            printf("    push [rsp]\n");
-            printf("    and rsp, -0x10\n");
+
             printf("    call %.*s\n", fn->len, fn->name);
-            printf("    add rsp, 8\n");
+            for(int i = 0; i < num_stack_var; i++){
+                printf("    pop rdi\n");
+            }
             printf("    mov rsp, [rsp]\n");
             printf("    push rax\n");
             return;

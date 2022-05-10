@@ -37,6 +37,6 @@ assert 1 "a = 1; if(a==0){return a;}else if(a==1){return a;}else{return a;}"
 assert 4 "a = 0; while(a<4) a=a+1; return a;"
 assert 4 "a = 0; for(i = 0; i<4;i=i+1) a=a+1; return a;"
 assert 1 "a = 0; foo(); return 1;"
-assert 21 "return plus( 1,2, 3,4,(1+4), 2*3);"
+assert 28 "return plus( 1,2, 3,4,5, 6, 7);"
 
 echo OK
