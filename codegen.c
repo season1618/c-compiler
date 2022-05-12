@@ -108,9 +108,10 @@ void gen_stmt(node *nd){
         case ND_FUNC:{
             func *fn = nd->fn;
             int num_stack_var;
-            if(fn->num > 6) num_stack_var = fn->num - 6;
+            if(fn->arg_num > 6) num_stack_var = fn->arg_num - 6;
             else num_stack_var = 0;
 
+            // adjust stack alignment
             printf("    push rsp\n");
             printf("    push [rsp]\n");
             if(num_stack_var % 2 == 0){
@@ -121,7 +122,8 @@ void gen_stmt(node *nd){
                 printf("    add rsp, 8\n");
             }
 
-            int i = fn->num - 1;
+            // move arguments to a register or the stack
+            int i = fn->arg_num - 1;
             node *cur = fn->args_head;
             while(cur){
                 gen_stmt(cur);
@@ -199,9 +201,10 @@ void gen_func(node *nd){
 
     printf("    push rbp\n");
     printf("    mov rbp, rsp\n");
-    printf("    sub rsp, 208\n");
+    printf("    sub rsp, %d\n", 8 * fn->local_num); // region of local variables
 
-    for(int i = 0; i < fn->num; i++){
+    // move arguments from registers or the stack on the rbp to the stack under rbp.
+    for(int i = 0; i < fn->arg_num; i++){
         if(i < 6){
             printf("    mov rax, rbp\n");
             printf("    sub rax, %d\n", 8 * (i + 1));

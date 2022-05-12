@@ -8,7 +8,7 @@ typedef enum {
 
 typedef enum {
     ND_FUNC_DEF,
-    
+
     ND_IF,
     ND_WHILE,
     ND_FOR,
@@ -46,15 +46,16 @@ struct local {
     local *next;
     char *name;
     int len;
-    int offset;
+    int index;
 };
 
 struct func {
     char *name;
     int len;
     node *args_head;
-    int num;
+    int arg_num;
     node *stmt;
+    int local_num;
 };
 
 struct node {

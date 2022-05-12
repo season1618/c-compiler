@@ -97,13 +97,13 @@ node *func_def(){
         nd->fn = fn;
         fn->name = tk->str;
         fn->len = tk->len;
-        fn->num = 0;
+        fn->arg_num = 0;
 
         tk = tk->next;
         expect("(");
         while(!expect(")")){
             expr(); // var_def
-            fn->num++;
+            fn->arg_num++;
             if(expect(",")){
                 continue;
             }else{
@@ -116,10 +116,11 @@ node *func_def(){
         }
         if(tk->str[0] == '{'){
             fn->stmt = stmt();
+            fn->local_num = local_head->index;
+            return nd;
         }else{
             error(tk, "expected '{'");
         }
-        return nd;
     }
 }
 
@@ -295,7 +296,7 @@ node *primary(){
         nd->fn = fn;
         fn->name = tk->str;
         fn->len = tk->len;
-        fn->num = 0;
+        fn->arg_num = 0;
 
         tk = tk->next;
         expect("(");
@@ -304,7 +305,7 @@ node *primary(){
             cur = expr();
             cur->next = fn->args_head;
             fn->args_head = cur;
-            fn->num++;
+            fn->arg_num++;
             if(expect(",")){
                 continue;
             }else{
@@ -323,15 +324,16 @@ node *primary(){
 
         local *var = find_local();
         if(var){
-            nd->offset = var->offset;
+            nd->offset = 8 * var->index;
         }else{
             var = calloc(1, sizeof(local));
             var->next = local_head;
             var->name = tk->str;
             var->len = tk->len;
-            var->offset = local_head->offset + 8;
+            var->index = local_head->index + 1;
 
-            nd->offset = var->offset;
+            nd->offset = 8 * var->index;
+
             local_head = var;
         }
         tk = tk->next;
