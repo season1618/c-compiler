@@ -76,7 +76,6 @@ node *node_num(int val){
 
 node **program(token *token_head){
     tk = token_head;
-    local_head = calloc(1, sizeof(local));
 
     node **prg = calloc(100, sizeof(node*));
     int i = 0;
@@ -92,6 +91,8 @@ node *func_def(){
     if(tk->kind == TK_ID && tk->next->kind != TK_EOF && tk->next->str[0] == '('){
         node *nd = calloc(1, sizeof(node));
         func *fn = calloc(1, sizeof(func));
+        local_head = calloc(1, sizeof(local));
+        
         nd->kind = ND_FUNC_DEF;
         nd->fn = fn;
         fn->name = tk->str;
