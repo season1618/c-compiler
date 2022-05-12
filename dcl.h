@@ -57,7 +57,8 @@ struct func {
 struct node {
     node_kind kind;
     node **elms; // ND_IF, ND_WHILE, ND_FOR
-    node *head, *next; // ND_BLOCK
+    node *head; // ND_BLOCK
+    node *next; // ND_BLOCK, ND_FUNC
     node *lhs, *rhs; // operator
     func *fn; // ND_FUNC
     int offset; // ND_LOCAL

@@ -83,7 +83,7 @@ void gen_stmt(node *nd){
             printf(".L%d:\n", l2);
             return;
         case ND_BLOCK:
-            for(node *cur = nd->head; cur; cur = cur->next){
+            for(node *cur = nd->head->next; cur; cur = cur->next){
                 gen_stmt(cur);
                 printf("    pop rax\n");
             }

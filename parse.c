@@ -142,7 +142,7 @@ node *stmt(){
     }
     else if(expect("{")){
         nd->kind = ND_BLOCK;
-        nd->head = stmt();
+        nd->head = calloc(1, sizeof(node));
         node *cur = nd->head;
         while(!expect("}")){
             cur->next = stmt();
