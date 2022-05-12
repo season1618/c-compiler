@@ -92,7 +92,7 @@ node *func_def(){
         node *nd = calloc(1, sizeof(node));
         func *fn = calloc(1, sizeof(func));
         local_head = calloc(1, sizeof(local));
-        
+
         nd->kind = ND_FUNC_DEF;
         nd->fn = fn;
         fn->name = tk->str;
@@ -101,11 +101,8 @@ node *func_def(){
 
         tk = tk->next;
         expect("(");
-        node *cur;
         while(!expect(")")){
-            cur = expr(); // var_def
-            cur->next = fn->args_head;
-            fn->args_head = cur;
+            expr(); // var_def
             fn->num++;
             if(expect(",")){
                 continue;
@@ -336,10 +333,6 @@ node *primary(){
 
             nd->offset = var->offset;
             local_head = var;
-            // printf("%c\n", *var->name);
-            // printf("%d\n", var->len);
-            // printf("%d\n", var->offset);
-            // exit(0);
         }
         tk = tk->next;
         return nd;

@@ -38,6 +38,7 @@ assert 1 "main(){ a = 1; if(a==0){return a;}else if(a==1){return a;}else{return 
 assert 4 "main(){ a = 0; while(a<4) a=a+1; return a; }"
 assert 4 "main(){ a = 0; for(i = 0; i<4;i=i+1) a=a+1; return a; }"
 assert 1 "main(){ a = 0; foo(); return 1; }"
-assert 28 "main(){ return plus( 1,2, 3,4,5, 6, 7); }"
+assert 28 "plus(a, b, c, d, e, f, g){ return a + b + c + d + e + f + g; } main(){ return plus(1,2,3,4,5,6,7); }"
+assert 2 "sub(a, b){ return a - b; } main(){ return sub(3, 1); }"
 
 echo OK

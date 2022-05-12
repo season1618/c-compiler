@@ -201,6 +201,21 @@ void gen_func(node *nd){
     printf("    mov rbp, rsp\n");
     printf("    sub rsp, 208\n");
 
+    for(int i = 0; i < fn->num; i++){
+        if(i < 6){
+            printf("    mov rax, rbp\n");
+            printf("    sub rax, %d\n", 8 * (i + 1));
+            printf("    mov [rax], %s\n", arg_reg_int[i]);
+        }else{
+            printf("    mov rax, rbp\n");
+            printf("    sub rax, %d\n", 8 * (i + 1));
+            printf("    mov rbx, rbp\n");
+            printf("    add rbx, %d\n", 8 * (i - 4));
+            printf("    mov rbx, [rbx]\n");
+            printf("    mov [rax], rbx\n");
+        }
+    }
+
     gen_stmt(fn->stmt);
 
     printf("    mov rsp, rbp\n");
