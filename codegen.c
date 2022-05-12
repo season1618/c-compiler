@@ -192,21 +192,27 @@ void gen_stmt(node *nd){
     printf("    push rax\n");
 }
 
-void gen_code(node **prg){
-    printf(".intel_syntax noprefix\n");
-    printf(".global main\n");
-    printf("main:\n");
-    
+void gen_func(node *nd){
+    func *fn = nd->fn;
+
+    printf("%.*s:\n", fn->len, fn->name);
+
     printf("    push rbp\n");
     printf("    mov rbp, rsp\n");
     printf("    sub rsp, 208\n");
 
-    for(int i = 0; prg[i]; i++){
-        gen_stmt(prg[i]);
-        printf("    pop rax\n");
-    }
+    gen_stmt(fn->stmt);
 
     printf("    mov rsp, rbp\n");
     printf("    pop rbp\n");
     printf("    ret\n");
+}
+
+void gen_code(node **prg){
+    printf(".intel_syntax noprefix\n");
+    printf(".global main\n");
+
+    for(int i = 0; prg[i]; i++){
+        gen_func(prg[i]);
+    }    
 }

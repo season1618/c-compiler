@@ -7,6 +7,8 @@ typedef enum {
 } token_kind;
 
 typedef enum {
+    ND_FUNC_DEF,
+    
     ND_IF,
     ND_WHILE,
     ND_FOR,
@@ -52,15 +54,16 @@ struct func {
     int len;
     node *args_head;
     int num;
+    node *stmt;
 };
 
 struct node {
     node_kind kind;
     node **elms; // ND_IF, ND_WHILE, ND_FOR
     node *head; // ND_BLOCK
-    node *next; // ND_BLOCK, ND_FUNC
+    node *next; // ND_BLOCK, ND_FUNC, ND_FUNC_DEF
     node *lhs, *rhs; // operator
-    func *fn; // ND_FUNC
+    func *fn; // ND_FUNC, ND_FUNC_DEF
     int offset; // ND_LOCAL
     int val; // ND_NUM
 };

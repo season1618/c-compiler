@@ -8,6 +8,7 @@
 token *tk;
 local *local_head;
 
+node *func_def();
 node *stmt();
 node *expr();
 node *assign();
@@ -80,11 +81,48 @@ node **program(token *token_head){
     node **prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
-        prg[i] = stmt();
+        prg[i] = func_def();
         i++;
     }
     prg[i] = NULL;
     return prg;
+}
+
+node *func_def(){
+    if(tk->kind == TK_ID && tk->next->kind != TK_EOF && tk->next->str[0] == '('){
+        node *nd = calloc(1, sizeof(node));
+        func *fn = calloc(1, sizeof(func));
+        nd->kind = ND_FUNC_DEF;
+        nd->fn = fn;
+        fn->name = tk->str;
+        fn->len = tk->len;
+        fn->num = 0;
+
+        tk = tk->next;
+        expect("(");
+        node *cur;
+        while(!expect(")")){
+            cur = expr(); // var_def
+            cur->next = fn->args_head;
+            fn->args_head = cur;
+            fn->num++;
+            if(expect(",")){
+                continue;
+            }else{
+                if(expect(")")){
+                    break;
+                }else{
+                    error(tk, "expected ',' or ')'");
+                }
+            }
+        }
+        if(tk->str[0] == '{'){
+            fn->stmt = stmt();
+        }else{
+            error(tk, "expected '{'");
+        }
+        return nd;
+    }
 }
 
 node *stmt(){
