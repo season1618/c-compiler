@@ -288,10 +288,10 @@ node *unary(){
         return node_binary(ND_SUB, node_num(0), unary());
     }
     if(expect("&")){
-        return node_unary(ND_ADR, primary());
+        return node_unary(ND_ADR, unary());
     }
     if(expect("*")){
-        return node_unary(ND_DEREF, primary());
+        return node_unary(ND_DEREF, unary());
     }
     return primary();
 }
