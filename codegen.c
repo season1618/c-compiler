@@ -105,7 +105,17 @@ void gen_stmt(node *nd){
             printf("    mov [rax], rdi\n");
             printf("    push rdi\n");
             return;
-        case ND_FUNC:{
+        case ND_ADR:
+            gen_lval(nd->lhs);
+            return;
+        case ND_DEREF:
+            gen_lval(nd->lhs);
+            printf("    pop rax\n");
+            printf("    mov rax, [rax]\n");
+            printf("    mov rax, [rax]\n");
+            printf("    push rax\n");
+            return;
+        case ND_FUNC_CALL:{
             func *fn = nd->fn;
             int num_stack_var;
             if(fn->arg_num > 6) num_stack_var = fn->arg_num - 6;

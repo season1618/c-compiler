@@ -59,11 +59,18 @@ local *find_local(){
     return NULL;
 }
 
-node *node_operator(node_kind kind, node *lhs, node *rhs){
+node *node_binary(node_kind kind, node *lhs, node *rhs){
     node *nd = calloc(1, sizeof(node));
     nd->kind = kind;
     nd->lhs = lhs;
     nd->rhs = rhs;
+    return nd;
+}
+
+node *node_unary(node_kind kind, node *op){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = kind;
+    nd->lhs = op;
     return nd;
 }
 
@@ -200,7 +207,7 @@ node *expr(){
 node *assign(){
     node *nd = equal();
     if(expect("=")){
-        nd = node_operator(ND_ASSIGN, nd, assign());
+        nd = node_binary(ND_ASSIGN, nd, assign());
     }
     return nd;
 }
@@ -209,11 +216,11 @@ node *equal(){
     node *nd = relational();
     while(true){
         if(expect("==")){
-            nd = node_operator(ND_EQ, nd, relational());
+            nd = node_binary(ND_EQ, nd, relational());
             continue;
         }
         if(expect("!=")){
-            nd = node_operator(ND_NEQ, nd, relational());
+            nd = node_binary(ND_NEQ, nd, relational());
             continue;
         }
         return nd;
@@ -224,19 +231,19 @@ node *relational(){
     node *nd = add();
     while(true){
         if(expect("<")){
-            nd = node_operator(ND_LT, nd, add());
+            nd = node_binary(ND_LT, nd, add());
             continue;
         }
         if(expect("<=")){
-            nd = node_operator(ND_LEQ, nd, add());
+            nd = node_binary(ND_LEQ, nd, add());
             continue;
         }
         if(expect(">")){
-            nd = node_operator(ND_LT, add(), nd);
+            nd = node_binary(ND_LT, add(), nd);
             continue;
         }
         if(expect(">=")){
-            nd = node_operator(ND_LEQ, add(), nd);
+            nd = node_binary(ND_LEQ, add(), nd);
             continue;
         }
         return nd;
@@ -247,11 +254,11 @@ node *add(){
     node *nd = mul();
     while(true){
         if(expect("+")){
-            nd = node_operator(ND_ADD, nd, mul());
+            nd = node_binary(ND_ADD, nd, mul());
             continue;
         }
         if(expect("-")){
-            nd = node_operator(ND_SUB, nd, mul());
+            nd = node_binary(ND_SUB, nd, mul());
             continue;
         }
         return nd;
@@ -262,11 +269,11 @@ node *mul(){
     node *nd = unary();
     while(true){
         if(expect("*")){
-            nd = node_operator(ND_MUL, nd, unary());
+            nd = node_binary(ND_MUL, nd, unary());
             continue;
         }
         if(expect("/")){
-            nd = node_operator(ND_DIV, nd, unary());
+            nd = node_binary(ND_DIV, nd, unary());
             continue;
         }
         return nd;
@@ -278,7 +285,13 @@ node *unary(){
         return unary();
     }
     if(expect("-")){
-        return node_operator(ND_SUB, node_num(0), unary());
+        return node_binary(ND_SUB, node_num(0), unary());
+    }
+    if(expect("&")){
+        return node_unary(ND_ADR, primary());
+    }
+    if(expect("*")){
+        return node_unary(ND_DEREF, primary());
     }
     return primary();
 }
@@ -292,7 +305,7 @@ node *primary(){
     if(tk->kind == TK_ID && tk->next->kind != TK_EOF && tk->next->str[0] == '('){
         node *nd = calloc(1, sizeof(node));
         func *fn = calloc(1, sizeof(func));
-        nd->kind = ND_FUNC;
+        nd->kind = ND_FUNC_CALL;
         nd->fn = fn;
         fn->name = tk->str;
         fn->len = tk->len;

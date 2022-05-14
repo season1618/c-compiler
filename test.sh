@@ -37,5 +37,5 @@ assert 1 "main(){ a = 0; foo(); return 1; }"
 assert 28 "plus(a, b, c, d, e, f, g){ return a + b + c + d + e + f + g; } main(){ return plus(1,2,3,4,5,6,7); }"
 assert 2 "sub(a, b){ return a - b; } main(){ return sub(3, 1); }"
 assert 13 "fibonacci(n){ if(n == 0) return 0; else if(n == 1) return 1; else return fibonacci(n-1) + fibonacci(n-2); } main(){ return fibonacci(7); }"
-
+assert 1 "main(){ a = 1; b = &a; return *b; }"
 echo OK

@@ -16,8 +16,6 @@ typedef enum {
     ND_RET,
 
     ND_ASSIGN,
-    ND_FUNC,
-    ND_LOCAL,
     ND_ADD,
     ND_SUB,
     ND_MUL,
@@ -26,6 +24,10 @@ typedef enum {
     ND_NEQ,
     ND_LT,
     ND_LEQ,
+    ND_ADR,
+    ND_DEREF,
+    ND_FUNC_CALL,
+    ND_LOCAL,
     ND_NUM,
 } node_kind;
 
