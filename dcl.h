@@ -1,5 +1,6 @@
 typedef enum {
     TK_KEYWORD,
+    TK_TYPE,
     TK_ID,
     TK_NUM,
     TK_PUNCT,
@@ -7,15 +8,20 @@ typedef enum {
 } token_kind;
 
 typedef enum {
+    // definition
     ND_FUNC_DEF,
 
+    // statement
     ND_IF,
     ND_WHILE,
     ND_FOR,
     ND_BLOCK,
     ND_RET,
 
+    // assignment
     ND_ASSIGN,
+
+    // binary operator
     ND_ADD,
     ND_SUB,
     ND_MUL,
@@ -24,8 +30,12 @@ typedef enum {
     ND_NEQ,
     ND_LT,
     ND_LEQ,
+
+    // unary operator
     ND_ADR,
     ND_DEREF,
+
+    // primary
     ND_FUNC_CALL,
     ND_LOCAL,
     ND_NUM,

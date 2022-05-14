@@ -9,6 +9,7 @@ token *tk;
 local *local_head;
 
 node *func_def();
+void *dec();
 node *stmt();
 node *expr();
 node *assign();
@@ -87,8 +88,12 @@ node **program(token *token_head){
     node **prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
-        prg[i] = func_def();
-        i++;
+        if(tk->kind == TK_ID && tk->next->kind != TK_EOF && tk->next->str[0] == '('){
+            prg[i] = func_def();
+            i++;
+        }else if(tk->kind == TK_ID){
+            dec();
+        }
     }
     prg[i] = NULL;
     return prg;
@@ -131,10 +136,39 @@ node *func_def(){
     }
 }
 
+void *dec(){
+    if(expect("int")){
+        local *var = calloc(1, sizeof(local));
+        var->next = local_head;
+        var->name = tk->str;
+        var->len = tk->len;
+        var->index = local_head->index + 1;
+
+        local_head = var;
+
+        tk = tk->next;
+        if(!expect(";")) error(tk, "expected ';'");
+    }
+}
+
 node *stmt(){
     node *nd = calloc(1, sizeof(node));
     
-    if(expect("if")){
+    if(expect("{")){
+        nd->kind = ND_BLOCK;
+        nd->head = calloc(1, sizeof(node));
+        node *cur = nd->head;
+        while(!expect("}")){
+            if(tk->kind == TK_TYPE){
+                dec();
+            }
+            else{
+                cur->next = stmt();
+                cur = cur->next;
+            }
+        }
+    }
+    else if(expect("if")){
         if(!expect("(")) error(tk, "expected '('");
 
         nd->kind = ND_IF;
@@ -183,15 +217,6 @@ node *stmt(){
         nd->kind = ND_RET;
         nd->lhs = expr();
         if(!expect(";")) error(tk, "expected ';'");
-    }
-    else if(expect("{")){
-        nd->kind = ND_BLOCK;
-        nd->head = calloc(1, sizeof(node));
-        node *cur = nd->head;
-        while(!expect("}")){
-            cur->next = stmt();
-            cur = cur->next;
-        }
     }
     else{
         nd = expr();

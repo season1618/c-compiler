@@ -9,8 +9,10 @@
 
 char *p;
 int NUM_KEYWORD = 5;
+int NUM_TYPE = 1;
 int NUM_PUNCT = 21;
 char *keywords[] = {"return", "if", "else", "while", "for"};
+char *types[] = {"int"};
 char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", "&", ":", ";", ",", ".", "<", ">", "(", ")", "{", "}", "[", "]"};
 
 bool is_alpha(char c){
@@ -66,6 +68,14 @@ token *tokenize(char *code_head){
         for(int i = 0; i < NUM_KEYWORD; i++){
             if(fwdmatch(p, keywords[i]) && !is_alnum(p[strlen(keywords[i])])){
                 cur = next_token(TK_KEYWORD, cur, strlen(keywords[i]));
+                flag = true;
+                break;
+            }
+        }
+        if(flag) continue;
+        for(int i = 0; i < NUM_TYPE; i++){
+            if(fwdmatch(p, types[i]) && !is_alnum(p[strlen(types[i])])){
+                cur = next_token(TK_TYPE, cur, strlen(types[i]));
                 flag = true;
                 break;
             }
