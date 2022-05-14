@@ -51,6 +51,17 @@ bool is_eof(){
     return tk->kind == TK_EOF;
 }
 
+void *add_local(){
+    local *var = calloc(1, sizeof(local));
+    var->next = local_head;
+    var->name = tk->str;
+    var->len = tk->len;
+    var->index = local_head->index + 1;
+
+    local_head = var;
+    tk = tk->next;
+}
+
 local *find_local(){
     for(local *var = local_head; var; var = var->next){
         if(var->len == tk->len && memcmp(var->name, tk->str, var->len) == 0){
@@ -114,7 +125,7 @@ node *func_def(){
         tk = tk->next;
         expect("(");
         while(!expect(")")){
-            expr(); // var_def
+            add_local();
             fn->arg_num++;
             if(expect(",")){
                 continue;
@@ -138,15 +149,7 @@ node *func_def(){
 
 void *dec(){
     if(expect("int")){
-        local *var = calloc(1, sizeof(local));
-        var->next = local_head;
-        var->name = tk->str;
-        var->len = tk->len;
-        var->index = local_head->index + 1;
-
-        local_head = var;
-
-        tk = tk->next;
+        add_local();
         if(!expect(";")) error(tk, "expected ';'");
     }
 }
@@ -364,15 +367,7 @@ node *primary(){
         if(var){
             nd->offset = 8 * var->index;
         }else{
-            var = calloc(1, sizeof(local));
-            var->next = local_head;
-            var->name = tk->str;
-            var->len = tk->len;
-            var->index = local_head->index + 1;
-
-            nd->offset = 8 * var->index;
-
-            local_head = var;
+            error(tk, "'%.*s' is undeclared", tk->len, tk->str);
         }
         tk = tk->next;
         return nd;
