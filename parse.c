@@ -52,6 +52,8 @@ bool is_eof(){
 }
 
 void *add_local(){
+    expect("int");
+
     local *var = calloc(1, sizeof(local));
     var->next = local_head;
     var->name = tk->str;
@@ -99,59 +101,65 @@ node **program(token *token_head){
     node **prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
-        if(tk->kind == TK_ID && tk->next->kind != TK_EOF && tk->next->str[0] == '('){
+        if(tk->kind == TK_TYPE && tk->next->kind != TK_EOF && tk->next->next->kind != TK_EOF && tk->next->next->str[0] == '('){
             prg[i] = func_def();
             i++;
-        }else if(tk->kind == TK_ID){
-            dec();
+            continue;
         }
+        if(tk->kind == TK_TYPE){
+            dec();
+            continue;
+        }
+        error(tk, "return type is unknown");
     }
     prg[i] = NULL;
     return prg;
 }
 
 node *func_def(){
-    if(tk->kind == TK_ID && tk->next->kind != TK_EOF && tk->next->str[0] == '('){
-        node *nd = calloc(1, sizeof(node));
-        func *fn = calloc(1, sizeof(func));
-        local_head = calloc(1, sizeof(local));
+    expect("int");
 
-        nd->kind = ND_FUNC_DEF;
-        nd->fn = fn;
-        fn->name = tk->str;
-        fn->len = tk->len;
-        fn->arg_num = 0;
+    node *nd = calloc(1, sizeof(node));
+    func *fn = calloc(1, sizeof(func));
+    local_head = calloc(1, sizeof(local));
 
-        tk = tk->next;
-        expect("(");
-        while(!expect(")")){
+    nd->kind = ND_FUNC_DEF;
+    nd->fn = fn;
+    fn->name = tk->str;
+    fn->len = tk->len;
+    fn->arg_num = 0;
+
+    tk = tk->next;
+    expect("(");
+    while(!expect(")")){
+        if(tk->kind == TK_TYPE){
             add_local();
-            fn->arg_num++;
-            if(expect(",")){
-                continue;
+        }else{
+            error(tk, "expected type");
+        }
+        fn->arg_num++;
+        if(expect(",")){
+            continue;
+        }else{
+            if(expect(")")){
+                break;
             }else{
-                if(expect(")")){
-                    break;
-                }else{
-                    error(tk, "expected ',' or ')'");
-                }
+                error(tk, "expected ',' or ')'");
             }
         }
-        if(tk->str[0] == '{'){
-            fn->stmt = stmt();
-            fn->local_num = local_head->index;
-            return nd;
-        }else{
-            error(tk, "expected '{'");
-        }
+    }
+    if(tk->str[0] == '{'){
+        fn->stmt = stmt();
+        fn->local_num = local_head->index;
+        return nd;
+    }else{
+        error(tk, "expected '{'");
     }
 }
 
 void *dec(){
-    if(expect("int")){
-        add_local();
-        if(!expect(";")) error(tk, "expected ';'");
-    }
+    add_local();
+    if(!expect(";")) error(tk, "expected ';'");
 }
 
 node *stmt(){
