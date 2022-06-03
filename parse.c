@@ -20,15 +20,6 @@ node *mul();
 node *unary();
 node *primary();
 
-int get_number(){
-    if(tk->kind != TK_NUM){
-        error(tk, "unexpected token");
-    }
-    int val = tk->val;
-    tk = tk->next;
-    return val;
-}
-
 bool expect(char *op){
     if(tk->len == strlen(op) && memcmp(tk->str, op, tk->len) == 0){
         tk = tk->next;
@@ -36,6 +27,36 @@ bool expect(char *op){
     }else{
         return false;
     }
+}
+
+type *type_ptr(type *base){
+    type *ty = calloc(1, sizeof(type));
+    ty->kind = PTR;
+    ty->ptr_to = base;
+    return ty;
+}
+
+type *get_type(){
+    if(tk->kind != TK_TYPE){
+        error(tk, "unexpected token");
+    }
+    type *ty = calloc(1, sizeof(type));
+    if(expect("int")){
+        ty->kind = INT;
+    }
+    while(expect("*")){
+        ty = type_ptr(ty);
+    }
+    return ty;
+}
+
+int get_number(){
+    if(tk->kind != TK_NUM){
+        error(tk, "unexpected token");
+    }
+    int val = tk->val;
+    tk = tk->next;
+    return val;
 }
 
 char *get_id(){
@@ -52,10 +73,9 @@ bool is_eof(){
 }
 
 void *add_local(){
-    expect("int");
-
     local *var = calloc(1, sizeof(local));
     var->next = local_head;
+    var->ty = get_type();
     var->name = tk->str;
     var->len = tk->len;
     var->index = local_head->index + 1;
@@ -101,15 +121,15 @@ node **program(token *token_head){
     node **prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
-        if(tk->kind == TK_TYPE && tk->next->kind != TK_EOF && tk->next->next->kind != TK_EOF && tk->next->next->str[0] == '('){
+        if(tk->kind == TK_TYPE){
             prg[i] = func_def();
             i++;
             continue;
         }
-        if(tk->kind == TK_TYPE){
-            dec();
-            continue;
-        }
+        // if(tk->kind == TK_TYPE){
+        //     dec();
+        //     continue;
+        // }
         error(tk, "return type is unknown");
     }
     prg[i] = NULL;
@@ -117,14 +137,13 @@ node **program(token *token_head){
 }
 
 node *func_def(){
-    expect("int");
-
     node *nd = calloc(1, sizeof(node));
     func *fn = calloc(1, sizeof(func));
     local_head = calloc(1, sizeof(local));
 
     nd->kind = ND_FUNC_DEF;
     nd->fn = fn;
+    fn->ty = get_type();
     fn->name = tk->str;
     fn->len = tk->len;
     fn->arg_num = 0;

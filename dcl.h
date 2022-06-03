@@ -41,10 +41,16 @@ typedef enum {
     ND_NUM,
 } node_kind;
 
+typedef enum {
+    INT,
+    PTR
+} type_kind;
+
 typedef struct token token;
 typedef struct func func;
 typedef struct local local;
 typedef struct node node;
+typedef struct type type;
 
 struct token {
     token_kind kind;
@@ -56,12 +62,14 @@ struct token {
 
 struct local {
     local *next;
+    type *ty;
     char *name;
     int len;
     int index;
 };
 
 struct func {
+    type *ty;
     char *name;
     int len;
     node *args_head;
@@ -79,6 +87,11 @@ struct node {
     func *fn; // ND_FUNC, ND_FUNC_DEF
     int offset; // ND_LOCAL
     int val; // ND_NUM
+};
+
+struct type {
+    type_kind kind;
+    type *ptr_to;
 };
 
 extern void error(token *token, char *fmt, ...);

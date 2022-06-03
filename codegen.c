@@ -109,9 +109,8 @@ void gen_stmt(node *nd){
             gen_lval(nd->lhs);
             return;
         case ND_DEREF:
-            gen_lval(nd->lhs);
+            gen_stmt(nd->lhs);
             printf("    pop rax\n");
-            printf("    mov rax, [rax]\n");
             printf("    mov rax, [rax]\n");
             printf("    push rax\n");
             return;
