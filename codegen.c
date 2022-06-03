@@ -5,13 +5,20 @@
 int label_num = 2;
 char *arg_reg_int[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
+void gen_stmt(node *nd);
+
 void gen_lval(node *nd){
-    if(nd->kind != ND_LOCAL){
-        fprintf(stderr, "lvalue is not a variable");
+    switch(nd->kind){
+        case ND_LOCAL:
+            printf("    mov rax, rbp\n");
+            printf("    sub rax, %d\n", nd->offset);
+            printf("    push rax\n");
+            return;
+        case ND_DEREF:
+            gen_stmt(nd->lhs);
+            return;
     }
-    printf("    mov rax, rbp\n");
-    printf("    sub rax, %d\n", nd->offset);
-    printf("    push rax\n");
+    fprintf(stderr, "it is not lvalue\n");
 }
 
 void gen_stmt(node *nd){
@@ -97,16 +104,7 @@ void gen_stmt(node *nd){
             printf("    ret\n");
             return;
         case ND_ASSIGN:
-            switch(nd->lhs->kind){
-                case ND_LOCAL:
-                    gen_lval(nd->lhs);
-                    break;
-                case ND_DEREF:
-                    gen_stmt(nd->lhs->lhs);
-                    break;
-                default:
-                    fprintf(stderr, "lvalue required as left operand of assignment");
-            }
+            gen_lval(nd->lhs);
             gen_stmt(nd->rhs);
 
             printf("    pop rdi\n");
