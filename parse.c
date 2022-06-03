@@ -78,7 +78,7 @@ void *add_local(){
     var->ty = get_type();
     var->name = tk->str;
     var->len = tk->len;
-    var->index = local_head->index + 1;
+    var->offset = local_head->offset + 8;
 
     local_head = var;
     tk = tk->next;
@@ -169,7 +169,7 @@ node *func_def(){
     }
     if(tk->str[0] == '{'){
         fn->stmt = stmt();
-        fn->local_num = local_head->index;
+        fn->local_size = local_head->offset;
         return nd;
     }else{
         error(tk, "expected '{'");
@@ -392,7 +392,7 @@ node *primary(){
 
         local *var = find_local();
         if(var){
-            nd->offset = 8 * var->index;
+            nd->offset = var->offset;
         }else{
             error(tk, "'%.*s' is undeclared", tk->len, tk->str);
         }

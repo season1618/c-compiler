@@ -39,5 +39,6 @@ assert 2 "int sub(int a, int b){ return a - b; } int main(){ return sub(3, 1); }
 assert 13 "int fibonacci(int n){ if(n == 0) return 0; else if(n == 1) return 1; else return fibonacci(n-1) + fibonacci(n-2); } int main(){ return fibonacci(7); }"
 assert 1 "int main(){ int a; a = 1; int *b; b = &a; return *b; }"
 assert 1 "int *func(){ int a; a = 1; int *b; b = &a; return b; } int main(){ return *func(); }"
+assert 1 "int**func(){ int a; a = 1; int *b; b = &a; int **c; c = &b; return c; } int main(){ return **func(); }"
 
 echo OK

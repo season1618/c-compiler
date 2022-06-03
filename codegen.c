@@ -210,7 +210,7 @@ void gen_func(node *nd){
 
     printf("    push rbp\n");
     printf("    mov rbp, rsp\n");
-    printf("    sub rsp, %d\n", 8 * fn->local_num); // region of local variables
+    printf("    sub rsp, %d\n", fn->local_size); // region of local variables
 
     // move arguments from registers or the stack on the rbp to the stack under rbp.
     for(int i = 0; i < fn->arg_num; i++){

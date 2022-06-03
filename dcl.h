@@ -65,7 +65,7 @@ struct local {
     type *ty;
     char *name;
     int len;
-    int index;
+    int offset;
 };
 
 struct func {
@@ -75,7 +75,7 @@ struct func {
     node *args_head;
     int arg_num;
     node *stmt;
-    int local_num;
+    int local_size;
 };
 
 struct node {
