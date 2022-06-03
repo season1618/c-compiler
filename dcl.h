@@ -84,6 +84,7 @@ struct node {
     node *head; // ND_BLOCK
     node *next; // ND_BLOCK, ND_FUNC, ND_FUNC_DEF
     node *lhs, *rhs; // operator
+    type *ty;
     func *fn; // ND_FUNC, ND_FUNC_DEF
     int offset; // ND_LOCAL
     int val; // ND_NUM

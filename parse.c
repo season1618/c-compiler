@@ -6,6 +6,7 @@
 #include "dcl.h"
 
 token *tk;
+node **prg;
 local *local_head;
 
 node *func_def();
@@ -98,6 +99,43 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
     nd->kind = kind;
     nd->lhs = lhs;
     nd->rhs = rhs;
+    nd->ty = calloc(1, sizeof(type));
+
+    switch(kind){
+        case ND_ASSIGN:
+            nd->ty = rhs->ty;
+            break;
+        case ND_EQ:
+        case ND_NEQ:
+        case ND_LT:
+        case ND_LEQ:
+            if(lhs->ty->kind == rhs->ty->kind && lhs->ty->ptr_to == rhs->ty->ptr_to){
+                nd->ty->kind = INT;
+            }else{
+                error(tk, "invalid operands to binary operator");
+            }
+            break;
+        case ND_ADD:
+        case ND_SUB:
+            if(lhs->ty->ptr_to == rhs->ty){
+                nd->ty = lhs->ty;
+            }else if(rhs->ty->ptr_to == lhs->ty){
+                nd->ty = rhs->ty;
+            }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+                nd->ty = lhs->ty;
+            }else{
+                error(tk, "invalid operands to binary + or -");
+            }
+            break;
+        case ND_MUL:
+        case ND_DIV:
+            if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+                nd->ty->kind = INT;
+            }else{
+                error(tk, "invalid operands to binary * or ");
+            }
+            break;
+    }
     return nd;
 }
 
@@ -105,12 +143,29 @@ node *node_unary(node_kind kind, node *op){
     node *nd = calloc(1, sizeof(node));
     nd->kind = kind;
     nd->lhs = op;
+    nd->ty = calloc(1, sizeof(type));
+
+    switch(kind){
+        case ND_ADR:
+            nd->ty = calloc(1, sizeof(type));
+            nd->ty->kind = PTR;
+            nd->ty->ptr_to = op->ty;
+            break;
+        case ND_DEREF:
+            if(op->ty->kind == INT){
+                error(tk, "invalid type argument of unary '*' (have 'int')");
+            }
+            nd->ty = op->ty->ptr_to;
+            break;
+    }
     return nd;
 }
 
 node *node_num(int val){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_NUM;
+    nd->ty = calloc(1, sizeof(type));
+    nd->ty->kind = INT;
     nd->val = val;
     return nd;
 }
@@ -118,7 +173,7 @@ node *node_num(int val){
 node **program(token *token_head){
     tk = token_head;
 
-    node **prg = calloc(100, sizeof(node*));
+    prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
         if(tk->kind == TK_TYPE){
@@ -366,6 +421,15 @@ node *primary(){
         fn->len = tk->len;
         fn->arg_num = 0;
 
+        nd->ty = calloc(1, sizeof(type));
+        nd->ty->kind = INT;
+        for(int i = 0; i < 100; i++){
+            if(prg[i] && prg[i]->kind == ND_FUNC_DEF && memcmp(prg[i]->fn->name, fn->name, fn->len) == 0){
+                nd->ty = prg[i]->fn->ty;
+                break;
+            }
+        }
+
         tk = tk->next;
         expect("(");
         node *cur;
@@ -392,6 +456,7 @@ node *primary(){
 
         local *var = find_local();
         if(var){
+            nd->ty = var->ty;
             nd->offset = var->offset;
         }else{
             error(tk, "'%.*s' is undeclared", tk->len, tk->str);
