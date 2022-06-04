@@ -15,7 +15,7 @@ void gen_lval(node *nd){
             printf("    push rax\n");
             return;
         case ND_DEREF:
-            gen_stmt(nd->lhs);
+            gen_stmt(nd->op1);
             return;
     }
     fprintf(stderr, "it is not lvalue\n");
@@ -25,23 +25,23 @@ void gen_stmt(node *nd){
     switch(nd->kind){
         int l1, l2;
         case ND_IF:
-            gen_stmt(nd->elms[0]);
+            gen_stmt(nd->op1);
             
             printf("    pop rax\n");
             printf("    cmp rax, 0\n");
             
-            if(nd->elms[2]){
+            if(nd->op3){
                 l1 = label_num;
                 l2 = label_num + 1;
                 label_num += 2;
 
                 printf("    je .L%d\n", l1);
-                gen_stmt(nd->elms[1]);
+                gen_stmt(nd->op2);
                 printf("    jmp .L%d\n", l2);
                 
                 printf(".L%d:\n", l1);
                 
-                gen_stmt(nd->elms[2]);
+                gen_stmt(nd->op3);
                 
                 printf(".L%d:\n", l2);
             }else{
@@ -49,7 +49,7 @@ void gen_stmt(node *nd){
                 label_num += 1;
 
                 printf("    je .L%d\n", l1);
-                gen_stmt(nd->elms[1]);
+                gen_stmt(nd->op2);
 
                 printf(".L%d:\n", l1);
             }
@@ -61,11 +61,11 @@ void gen_stmt(node *nd){
 
             printf(".L%d:\n", l1);
 
-            gen_stmt(nd->elms[0]);
+            gen_stmt(nd->op1);
             printf("    pop rax\n");
             printf("    cmp rax, 0\n");
             printf("    je .L%d\n", l2);
-            gen_stmt(nd->elms[1]);
+            gen_stmt(nd->op2);
             printf("    jmp .L%d\n", l1);
             
             printf(".L%d:\n", l2);
@@ -75,16 +75,16 @@ void gen_stmt(node *nd){
             l2 = label_num + 1;
             label_num += 2;
 
-            gen_stmt(nd->elms[0]);
+            gen_stmt(nd->op1);
 
             printf(".L%d:\n", l1);
 
-            gen_stmt(nd->elms[1]);
+            gen_stmt(nd->op2);
             printf("    pop rax\n");
             printf("    cmp rax, 0\n");
             printf("    je .L%d\n", l2);
-            gen_stmt(nd->elms[3]);
-            gen_stmt(nd->elms[2]);
+            gen_stmt(nd->op4);
+            gen_stmt(nd->op3);
             printf("    jmp .L%d\n", l1);
 
             printf(".L%d:\n", l2);
@@ -96,7 +96,7 @@ void gen_stmt(node *nd){
             }
             return;
         case ND_RET:
-            gen_stmt(nd->lhs);
+            gen_stmt(nd->op1);
 
             printf("    pop rax\n");
             printf("    mov rsp, rbp\n");
@@ -104,8 +104,8 @@ void gen_stmt(node *nd){
             printf("    ret\n");
             return;
         case ND_ASSIGN:
-            gen_lval(nd->lhs);
-            gen_stmt(nd->rhs);
+            gen_lval(nd->op1);
+            gen_stmt(nd->op2);
 
             printf("    pop rdi\n");
             printf("    pop rax\n");
@@ -113,10 +113,10 @@ void gen_stmt(node *nd){
             printf("    push rdi\n");
             return;
         case ND_ADR:
-            gen_lval(nd->lhs);
+            gen_lval(nd->op1);
             return;
         case ND_DEREF:
-            gen_stmt(nd->lhs);
+            gen_stmt(nd->op1);
             printf("    pop rax\n");
             printf("    mov rax, [rax]\n");
             printf("    push rax\n");
@@ -167,8 +167,8 @@ void gen_stmt(node *nd){
             return;
     }
 
-    gen_stmt(nd->lhs);
-    gen_stmt(nd->rhs);
+    gen_stmt(nd->op1);
+    gen_stmt(nd->op2);
     printf("    pop rdi\n");
     printf("    pop rax\n");
     

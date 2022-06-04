@@ -97,8 +97,8 @@ local *find_local(){
 node *node_binary(node_kind kind, node *lhs, node *rhs){
     node *nd = calloc(1, sizeof(node));
     nd->kind = kind;
-    nd->lhs = lhs;
-    nd->rhs = rhs;
+    nd->op1 = lhs;
+    nd->op2 = rhs;
     nd->ty = calloc(1, sizeof(type));
 
     switch(kind){
@@ -142,7 +142,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
 node *node_unary(node_kind kind, node *op){
     node *nd = calloc(1, sizeof(node));
     nd->kind = kind;
-    nd->lhs = op;
+    nd->op1 = op;
     nd->ty = calloc(1, sizeof(type));
 
     switch(kind){
@@ -257,50 +257,47 @@ node *stmt(){
         if(!expect("(")) error(tk, "expected '('");
 
         nd->kind = ND_IF;
-        nd->elms = calloc(3, sizeof(node));
-        nd->elms[0] = expr();
+        nd->op1 = expr();
 
         if(!expect(")")) error(tk, "expected ')'");
 
-        nd->elms[1] = stmt();
+        nd->op2 = stmt();
 
         if(expect("else")){
-            nd->elms[2] = stmt();
+            nd->op3 = stmt();
         }
     }
     else if(expect("while")){
         if(!expect("(")) error(tk, "expected '('");
 
         nd->kind = ND_WHILE;
-        nd->elms = calloc(2, sizeof(node));
-        nd->elms[0] = expr();
+        nd->op1 = expr();
 
         if(!expect(")")) error(tk, "expected ')'");
 
-        nd->elms[1] = stmt();
+        nd->op2 = stmt();
     }
     else if(expect("for")){
         if(!expect("(")) error(tk, "expected '('");
 
         nd->kind = ND_FOR;
-        nd->elms = calloc(4, sizeof(node));
-        nd->elms[0] = expr();
+        nd->op1 = expr();
 
         if(!expect(";")) error(tk, "expected ';'");
 
-        nd->elms[1] = expr();
+        nd->op2 = expr();
 
         if(!expect(";")) error(tk, "expected ';'");
 
-        nd->elms[2] = expr();
+        nd->op3 = expr();
 
         if(!expect(")")) error(tk, "expected ')'");
 
-        nd->elms[3] = stmt();
+        nd->op4 = stmt();
     }
     else if(expect("return")){
         nd->kind = ND_RET;
-        nd->lhs = expr();
+        nd->op1 = expr();
         if(!expect(";")) error(tk, "expected ';'");
     }
     else{

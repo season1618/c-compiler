@@ -80,10 +80,9 @@ struct func {
 
 struct node {
     node_kind kind;
-    node **elms; // ND_IF, ND_WHILE, ND_FOR
+    node *op1, *op2, *op3, *op4; // ND_IF, ND_WHILE, ND_FOR, operator
     node *head; // ND_BLOCK
     node *next; // ND_BLOCK, ND_FUNC, ND_FUNC_DEF
-    node *lhs, *rhs; // operator
     type *ty;
     func *fn; // ND_FUNC, ND_FUNC_DEF
     int offset; // ND_LOCAL
