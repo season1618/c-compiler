@@ -8,6 +8,8 @@
 #include "dcl.h"
 
 char *p;
+token *cur;
+
 int NUM_KEYWORD = 5;
 int NUM_TYPE = 1;
 int NUM_PUNCT = 21;
@@ -23,23 +25,38 @@ bool is_alnum(char c){
     return is_alpha(c) || isdigit(c);
 }
 
-bool fwdmatch(char *s, char *t){
-    return memcmp(s, t, strlen(t)) == 0;
+bool fwdmatch(char *s){
+    return memcmp(p, s, strlen(s)) == 0;
 }
 
-token *next_token(token_kind kind, token *cur, int len){
+void next_token(token_kind kind, int len){
     token *nxt = calloc(1, sizeof(token));
     nxt->kind = kind;
     nxt->str = p;
     nxt->len = len;
 
     cur->next = nxt;
+    cur = nxt;
     p += len;
-
-    return nxt;
 }
 
-token *next_identifier(token *cur){
+void next_number(){
+    token *nxt = calloc(1, sizeof(token));
+    nxt->kind = TK_NUM;
+    nxt->val = 0;
+    nxt->str = p;
+    nxt->len = 0;
+    while(isdigit(*p)){
+        nxt->val *= 10;
+        nxt->val += *p - '0';
+        nxt->len++;
+        p++;
+    }
+    cur->next = nxt;
+    cur = nxt;
+}
+
+void next_identifier(){
     token *nxt = calloc(1, sizeof(token));
     nxt->kind = TK_ID;
     nxt->str = p;
@@ -49,7 +66,37 @@ token *next_identifier(token *cur){
         nxt->len++;
     }
     cur->next = nxt;
-    return nxt;
+    cur = nxt;
+}
+
+bool read_keyword(){
+    for(int i = 0; i < NUM_KEYWORD; i++){
+        if(fwdmatch(keywords[i]) && !is_alnum(p[strlen(keywords[i])])){
+            next_token(TK_KEYWORD, strlen(keywords[i]));
+            return true;
+        }
+    }
+    return false;
+}
+
+bool read_type(){
+    for(int i = 0; i < NUM_TYPE; i++){
+        if(fwdmatch(types[i]) && !is_alnum(p[strlen(types[i])])){
+            next_token(TK_TYPE, strlen(types[i]));
+            return true;
+        }
+    }
+    return false;
+}
+
+bool read_punct(){
+    for(int i = 0; i < NUM_PUNCT; i++){
+        if(fwdmatch(puncts[i])){
+            next_token(TK_PUNCT, strlen(puncts[i]));
+            return true;
+        }
+    }
+    return false;
 }
 
 token *tokenize(char *code_head){
@@ -57,54 +104,28 @@ token *tokenize(char *code_head){
 
     token *head = calloc(1, sizeof(token));
     head->next = NULL;
-    token *cur = head;
+    cur = head;
 
     while(*p){
-        bool flag = false;
         if(isspace(*p)){
             p++;
             continue;
         }
-        for(int i = 0; i < NUM_KEYWORD; i++){
-            if(fwdmatch(p, keywords[i]) && !is_alnum(p[strlen(keywords[i])])){
-                cur = next_token(TK_KEYWORD, cur, strlen(keywords[i]));
-                flag = true;
-                break;
-            }
-        }
-        if(flag) continue;
-        for(int i = 0; i < NUM_TYPE; i++){
-            if(fwdmatch(p, types[i]) && !is_alnum(p[strlen(types[i])])){
-                cur = next_token(TK_TYPE, cur, strlen(types[i]));
-                flag = true;
-                break;
-            }
-        }
-        if(flag) continue;
-        for(int i = 0; i < NUM_PUNCT; i++){
-            if(fwdmatch(p, puncts[i])){
-                cur = next_token(TK_PUNCT, cur, strlen(puncts[i]));
-                flag = true;
-                break;
-            }
-        }
-        if(flag) continue;
+        if(read_keyword()) continue;
+        if(read_type()) continue;
+        if(read_punct()) continue;
         if(isdigit(*p)){
-            cur = next_token(TK_NUM, cur, 0);
-            char *q = p;
-            cur->val = strtol(p, &p, 10);
-            cur->len = p - q;
+            next_number();
             continue;
         }
         if(is_alpha(*p)){
-            cur = next_identifier(cur);
+            next_identifier();
             continue;
         }
         error(cur, "invalid token");
     }
-    next_token(TK_EOF, cur, 0);
+    next_token(TK_EOF, 0);
 
-    
     // cur = head->next;
     // while(cur->kind != TK_EOF){
     //     for(int i = 0; i < cur->len; i++){
