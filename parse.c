@@ -94,6 +94,16 @@ local *find_local(){
     return NULL;
 }
 
+bool match_type(type *t1, type *t2){
+    if(t1->kind == PTR && t2->kind == PTR){
+        return match_type(t1->ptr_to, t2->ptr_to);
+    }
+    if(t1->kind == INT && t2->kind == INT){
+        return true;
+    }
+    return false;
+}
+
 node *node_binary(node_kind kind, node *lhs, node *rhs){
     node *nd = calloc(1, sizeof(node));
     nd->kind = kind;
@@ -109,7 +119,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_NEQ:
         case ND_LT:
         case ND_LEQ:
-            if(lhs->ty->kind == rhs->ty->kind && lhs->ty->ptr_to == rhs->ty->ptr_to){
+            if(match_type(lhs->ty, rhs->ty)){
                 nd->ty->kind = INT;
             }else{
                 error(tk, "invalid operands to binary operator");
@@ -117,10 +127,12 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             break;
         case ND_ADD:
         case ND_SUB:
-            if(lhs->ty->ptr_to == rhs->ty){
+            if(lhs->ty->kind == PTR && lhs->ty->ptr_to->kind == INT && rhs->ty->kind == INT){
                 nd->ty = lhs->ty;
-            }else if(rhs->ty->ptr_to == lhs->ty){
+                rhs->val *= 4;
+            }else if(lhs->ty->kind == INT && rhs->ty->kind == PTR && rhs->ty->ptr_to->kind == INT){
                 nd->ty = rhs->ty;
+                lhs->val *= 4;
             }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty = lhs->ty;
             }else{

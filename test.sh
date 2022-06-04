@@ -40,5 +40,6 @@ assert 13 "int fibonacci(int n){ if(n == 0) return 0; else if(n == 1) return 1; 
 assert 1 "int main(){ int a; a = 0; int *b; b = &a; int **c; c = &b; **c = 1; return *b; }"
 assert 1 "int *func(){ int a; a = 1; int *b; b = &a; return b; } int main(){ return *func(); }"
 assert 1 "int**func(){ int a; a = 1; int *b; b = &a; int **c; c = &b; return c; } int main(){ return **func(); }"
+assert 3 "int main(){ int *p; p = alloc(); return *(p + 3); }"
 
 echo OK
