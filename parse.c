@@ -173,6 +173,22 @@ node *node_unary(node_kind kind, node *op){
     return nd;
 }
 
+node *node_sizeof(node *op){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_NUM;
+    nd->ty = calloc(1, sizeof(type));
+    nd->ty->kind = INT;
+    switch(op->ty->kind){
+        case PTR:
+            nd->val = 8;
+            break;
+        case INT:
+            nd->val = 4;
+            break;
+    }
+    return nd;
+}
+
 node *node_num(int val){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_NUM;
@@ -411,6 +427,9 @@ node *unary(){
     }
     if(expect("*")){
         return node_unary(ND_DEREF, unary());
+    }
+    if(expect("sizeof")){
+        return node_sizeof(unary());
     }
     return primary();
 }
