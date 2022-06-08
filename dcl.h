@@ -42,8 +42,9 @@ typedef enum {
 } node_kind;
 
 typedef enum {
+    PTR,
+    ARRAY,
     INT,
-    PTR
 } type_kind;
 
 typedef struct token token;
@@ -58,6 +59,12 @@ struct token {
     int val; // kind == TK_NUM
     char *str;
     int len;
+};
+
+struct type {
+    type_kind kind;
+    type *ptr_to;
+    size_t arr_size;
 };
 
 struct local {
@@ -87,11 +94,6 @@ struct node {
     func *fn; // ND_FUNC, ND_FUNC_DEF
     int offset; // ND_LOCAL
     int val; // ND_NUM
-};
-
-struct type {
-    type_kind kind;
-    type *ptr_to;
 };
 
 extern void error(token *token, char *fmt, ...);

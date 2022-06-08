@@ -43,5 +43,6 @@ assert 1 "int**func(){ int a; a = 1; int *b; b = &a; int **c; c = &b; return c; 
 assert 3 "int main(){ int *p; p = alloc(); return *(p + 3); }"
 assert 4 "int main(){ return sizeof 1; }"
 assert 8 "int main(){ int *p; return sizeof p; }"
+assert 40 "int main(){ int a[10]; return sizeof a; }"
 
 echo OK

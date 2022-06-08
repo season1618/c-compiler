@@ -9,7 +9,7 @@ token *cur;
 node **prg;
 local *local_head;
 
-void *dcl();
+void dcl();
 node *stmt();
 node *expr();
 node *assign();
@@ -36,6 +36,25 @@ type *type_ptr(type *base){
     return ty;
 }
 
+type *type_array(type *base, size_t size){
+    type *ty = calloc(1, sizeof(type));
+    ty->kind = ARRAY;
+    ty->ptr_to = base;
+    ty->arr_size = size;
+    return ty;
+}
+
+int size_of(type *ty){
+    switch(ty->kind){
+        case INT:
+            return 4;
+        case PTR:
+            return 8;
+        case ARRAY:
+            return size_of(ty->ptr_to) * ty->arr_size;
+    }
+}
+
 type *get_type(){
     if(cur->kind != TK_TYPE){
         error(cur, "unexpected token");
@@ -50,15 +69,6 @@ type *get_type(){
     return ty;
 }
 
-int get_number(){
-    if(cur->kind != TK_NUM){
-        error(cur, "unexpected token");
-    }
-    int val = cur->val;
-    cur = cur->next;
-    return val;
-}
-
 char *get_id(){
     if(cur->kind != TK_ID){
         error(cur, "unexpected token");
@@ -68,20 +78,39 @@ char *get_id(){
     return str;
 }
 
+int get_number(){
+    if(cur->kind != TK_NUM){
+        error(cur, "unexpected token");
+    }
+    int val = cur->val;
+    cur = cur->next;
+    return val;
+}
+
 bool is_eof(){
     return cur->kind == TK_EOF;
 }
 
-void *add_local(){
+void *add_local(type *ty, token *tk){
     local *var = calloc(1, sizeof(local));
     var->next = local_head;
-    var->ty = get_type();
-    var->name = cur->str;
-    var->len = cur->len;
-    var->offset = local_head->offset + 8;
+    var->ty = ty;
+    var->name = tk->str;
+    var->len = tk->len;
+    
+    switch(ty->kind){
+        case INT:
+            var->offset = local_head->offset + 8;
+            break;
+        case PTR:
+            var->offset = local_head->offset + 8;
+            break;
+        case ARRAY:
+            var->offset = local_head->offset + 8 * ty->arr_size;
+            break;
+    }
 
     local_head = var;
-    cur = cur->next;
 }
 
 local *find_local(token *tk){
@@ -177,14 +206,7 @@ node *node_sizeof(node *op){
     nd->kind = ND_NUM;
     nd->ty = calloc(1, sizeof(type));
     nd->ty->kind = INT;
-    switch(op->ty->kind){
-        case PTR:
-            nd->val = 8;
-            break;
-        case INT:
-            nd->val = 4;
-            break;
-    }
+    nd->val = size_of(op->ty);
     return nd;
 }
 
@@ -236,7 +258,10 @@ node **program(token *token_head){
 
             while(!expect(")")){
                 if(cur->kind == TK_TYPE){
-                    add_local();
+                    ty = get_type();
+                    id = cur;
+                    cur = cur->next;
+                    add_local(ty, id);
                 }else{
                     error(cur, "expected type");
                 }
@@ -267,9 +292,29 @@ node **program(token *token_head){
     return prg;
 }
 
-void *dec(){
-    add_local();
-    if(!expect(";")) error(cur, "expected ';'");
+void dcl(){
+    type *ty = get_type();
+    token *id = cur;
+    cur = cur->next;
+
+    // variable
+    if(expect(";")){
+        add_local(ty, id);
+        return;
+    }
+
+    // array
+    if(expect("[")){
+        int size = get_number();
+        if(!expect("]")){
+            error(cur, "expect ']'");
+        }
+        if(!expect(";")){
+            error(cur, "expected ';'");
+        }
+        ty = type_array(ty, size);
+        add_local(ty, id);
+    }
 }
 
 node *stmt(){
@@ -281,7 +326,7 @@ node *stmt(){
         node *elm = nd->head;
         while(!expect("}")){
             if(cur->kind == TK_TYPE){
-                dec();
+                dcl();
             }
             else{
                 elm->next = stmt();
