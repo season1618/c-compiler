@@ -85,9 +85,9 @@ void *add_local(){
     tk = tk->next;
 }
 
-local *find_local(){
+local *find_local(token *tok){
     for(local *var = local_head; var; var = var->next){
-        if(var->len == tk->len && memcmp(var->name, tk->str, var->len) == 0){
+        if(var->len == tok->len && memcmp(var->name, tok->str, var->len) == 0){
             return var;
         }
     }
@@ -440,57 +440,61 @@ node *primary(){
         expect(")");
         return nd;
     }
-    if(tk->kind == TK_ID && tk->next->kind != TK_EOF && tk->next->str[0] == '('){
-        node *nd = calloc(1, sizeof(node));
-        func *fn = calloc(1, sizeof(func));
-        nd->kind = ND_FUNC_CALL;
-        nd->fn = fn;
-        fn->name = tk->str;
-        fn->len = tk->len;
-        fn->arg_num = 0;
-
-        nd->ty = calloc(1, sizeof(type));
-        nd->ty->kind = INT;
-        for(int i = 0; i < 100; i++){
-            if(prg[i] && prg[i]->kind == ND_FUNC_DEF && memcmp(prg[i]->fn->name, fn->name, fn->len) == 0){
-                nd->ty = prg[i]->fn->ty;
-                break;
-            }
-        }
-
+    if(tk->kind == TK_ID){
+        token *tok = tk;
         tk = tk->next;
-        expect("(");
-        node *cur;
-        while(!expect(")")){
-            cur = expr();
-            cur->next = fn->args_head;
-            fn->args_head = cur;
-            fn->arg_num++;
-            if(expect(",")){
-                continue;
-            }else{
-                if(expect(")")){
+
+        if(expect("(")){
+            node *nd = calloc(1, sizeof(node));
+            func *fn = calloc(1, sizeof(func));
+            nd->kind = ND_FUNC_CALL;
+            nd->fn = fn;
+            fn->name = tok->str;
+            fn->len = tok->len;
+            fn->arg_num = 0;
+
+            nd->ty = calloc(1, sizeof(type));
+            nd->ty->kind = INT;
+            for(int i = 0; i < 100; i++){
+                if(prg[i] && prg[i]->kind == ND_FUNC_DEF && memcmp(prg[i]->fn->name, fn->name, fn->len) == 0){
+                    nd->ty = prg[i]->fn->ty;
                     break;
-                }else{
-                    error(tk, "expected ',' or ')'");
                 }
             }
-        }
-        return nd;
-    }
-    if(tk->kind == TK_ID){
-        node *nd = calloc(1, sizeof(node));
-        nd->kind = ND_LOCAL;
 
-        local *var = find_local();
-        if(var){
-            nd->ty = var->ty;
-            nd->offset = var->offset;
+            node *cur;
+            while(!expect(")")){
+                cur = expr();
+                cur->next = fn->args_head;
+                fn->args_head = cur;
+                fn->arg_num++;
+                if(expect(",")){
+                    continue;
+                }else{
+                    if(expect(")")){
+                        break;
+                    }else{
+                        error(tk, "expected ',' or ')'");
+                    }
+                }
+            }
+            return nd;
         }else{
-            error(tk, "'%.*s' is undeclared", tk->len, tk->str);
+            node *nd = calloc(1, sizeof(node));
+            nd->kind = ND_LOCAL;
+
+            local *var = find_local(tok);
+            if(var){
+                nd->ty = var->ty;
+                nd->offset = var->offset;
+            }else{
+                error(tok, "'%.*s' is undeclared", tok->len, tok->str);
+            }
+            return nd;
         }
-        tk = tk->next;
-        return nd;
     }
-    return node_num(get_number());
+    if(tk->kind == TK_NUM){
+        return node_num(get_number());
+    }
+    error(tk, "unexpected token");
 }
