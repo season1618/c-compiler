@@ -5,7 +5,7 @@
 
 #include "dcl.h"
 
-token *tk;
+token *cur;
 node **prg;
 local *local_head;
 
@@ -22,8 +22,8 @@ node *unary();
 node *primary();
 
 bool expect(char *op){
-    if(tk->len == strlen(op) && memcmp(tk->str, op, tk->len) == 0){
-        tk = tk->next;
+    if(cur->len == strlen(op) && memcmp(cur->str, op, cur->len) == 0){
+        cur = cur->next;
         return true;
     }else{
         return false;
@@ -38,8 +38,8 @@ type *type_ptr(type *base){
 }
 
 type *get_type(){
-    if(tk->kind != TK_TYPE){
-        error(tk, "unexpected token");
+    if(cur->kind != TK_TYPE){
+        error(cur, "unexpected token");
     }
     type *ty = calloc(1, sizeof(type));
     if(expect("int")){
@@ -52,42 +52,42 @@ type *get_type(){
 }
 
 int get_number(){
-    if(tk->kind != TK_NUM){
-        error(tk, "unexpected token");
+    if(cur->kind != TK_NUM){
+        error(cur, "unexpected token");
     }
-    int val = tk->val;
-    tk = tk->next;
+    int val = cur->val;
+    cur = cur->next;
     return val;
 }
 
 char *get_id(){
-    if(tk->kind != TK_ID){
-        error(tk, "unexpected token");
+    if(cur->kind != TK_ID){
+        error(cur, "unexpected token");
     }
-    char *str = tk->str;
-    tk = tk->next;
+    char *str = cur->str;
+    cur = cur->next;
     return str;
 }
 
 bool is_eof(){
-    return tk->kind == TK_EOF;
+    return cur->kind == TK_EOF;
 }
 
 void *add_local(){
     local *var = calloc(1, sizeof(local));
     var->next = local_head;
     var->ty = get_type();
-    var->name = tk->str;
-    var->len = tk->len;
+    var->name = cur->str;
+    var->len = cur->len;
     var->offset = local_head->offset + 8;
 
     local_head = var;
-    tk = tk->next;
+    cur = cur->next;
 }
 
-local *find_local(token *tok){
+local *find_local(token *tk){
     for(local *var = local_head; var; var = var->next){
-        if(var->len == tok->len && memcmp(var->name, tok->str, var->len) == 0){
+        if(var->len == tk->len && memcmp(var->name, tk->str, var->len) == 0){
             return var;
         }
     }
@@ -122,7 +122,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             if(match_type(lhs->ty, rhs->ty)){
                 nd->ty->kind = INT;
             }else{
-                error(tk, "invalid operands to binary operator");
+                error(cur, "invalid operands to binary operator");
             }
             break;
         case ND_ADD:
@@ -136,7 +136,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty = lhs->ty;
             }else{
-                error(tk, "invalid operands to binary + or -");
+                error(cur, "invalid operands to binary + or -");
             }
             break;
         case ND_MUL:
@@ -144,7 +144,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty->kind = INT;
             }else{
-                error(tk, "invalid operands to binary * or ");
+                error(cur, "invalid operands to binary * or ");
             }
             break;
     }
@@ -165,7 +165,7 @@ node *node_unary(node_kind kind, node *op){
             break;
         case ND_DEREF:
             if(op->ty->kind == INT){
-                error(tk, "invalid type argument of unary '*' (have 'int')");
+                error(cur, "invalid type argument of unary '*' (have 'int')");
             }
             nd->ty = op->ty->ptr_to;
             break;
@@ -199,21 +199,21 @@ node *node_num(int val){
 }
 
 node **program(token *token_head){
-    tk = token_head;
+    cur = token_head;
 
     prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
-        if(tk->kind == TK_TYPE){
+        if(cur->kind == TK_TYPE){
             prg[i] = func_def();
             i++;
             continue;
         }
-        // if(tk->kind == TK_TYPE){
+        // if(cur->kind == TK_TYPE){
         //     dec();
         //     continue;
         // }
-        error(tk, "return type is unknown");
+        error(cur, "return type is unknown");
     }
     prg[i] = NULL;
     return prg;
@@ -227,17 +227,17 @@ node *func_def(){
     nd->kind = ND_FUNC_DEF;
     nd->fn = fn;
     fn->ty = get_type();
-    fn->name = tk->str;
-    fn->len = tk->len;
+    fn->name = cur->str;
+    fn->len = cur->len;
     fn->arg_num = 0;
 
-    tk = tk->next;
+    cur = cur->next;
     expect("(");
     while(!expect(")")){
-        if(tk->kind == TK_TYPE){
+        if(cur->kind == TK_TYPE){
             add_local();
         }else{
-            error(tk, "expected type");
+            error(cur, "expected type");
         }
         fn->arg_num++;
         if(expect(",")){
@@ -246,22 +246,22 @@ node *func_def(){
             if(expect(")")){
                 break;
             }else{
-                error(tk, "expected ',' or ')'");
+                error(cur, "expected ',' or ')'");
             }
         }
     }
-    if(tk->str[0] == '{'){
+    if(cur->str[0] == '{'){
         fn->stmt = stmt();
         fn->local_size = local_head->offset;
         return nd;
     }else{
-        error(tk, "expected '{'");
+        error(cur, "expected '{'");
     }
 }
 
 void *dec(){
     add_local();
-    if(!expect(";")) error(tk, "expected ';'");
+    if(!expect(";")) error(cur, "expected ';'");
 }
 
 node *stmt(){
@@ -270,24 +270,24 @@ node *stmt(){
     if(expect("{")){
         nd->kind = ND_BLOCK;
         nd->head = calloc(1, sizeof(node));
-        node *cur = nd->head;
+        node *elm = nd->head;
         while(!expect("}")){
-            if(tk->kind == TK_TYPE){
+            if(cur->kind == TK_TYPE){
                 dec();
             }
             else{
-                cur->next = stmt();
-                cur = cur->next;
+                elm->next = stmt();
+                elm = elm->next;
             }
         }
     }
     else if(expect("if")){
-        if(!expect("(")) error(tk, "expected '('");
+        if(!expect("(")) error(cur, "expected '('");
 
         nd->kind = ND_IF;
         nd->op1 = expr();
 
-        if(!expect(")")) error(tk, "expected ')'");
+        if(!expect(")")) error(cur, "expected ')'");
 
         nd->op2 = stmt();
 
@@ -296,41 +296,41 @@ node *stmt(){
         }
     }
     else if(expect("while")){
-        if(!expect("(")) error(tk, "expected '('");
+        if(!expect("(")) error(cur, "expected '('");
 
         nd->kind = ND_WHILE;
         nd->op1 = expr();
 
-        if(!expect(")")) error(tk, "expected ')'");
+        if(!expect(")")) error(cur, "expected ')'");
 
         nd->op2 = stmt();
     }
     else if(expect("for")){
-        if(!expect("(")) error(tk, "expected '('");
+        if(!expect("(")) error(cur, "expected '('");
 
         nd->kind = ND_FOR;
         nd->op1 = expr();
 
-        if(!expect(";")) error(tk, "expected ';'");
+        if(!expect(";")) error(cur, "expected ';'");
 
         nd->op2 = expr();
 
-        if(!expect(";")) error(tk, "expected ';'");
+        if(!expect(";")) error(cur, "expected ';'");
 
         nd->op3 = expr();
 
-        if(!expect(")")) error(tk, "expected ')'");
+        if(!expect(")")) error(cur, "expected ')'");
 
         nd->op4 = stmt();
     }
     else if(expect("return")){
         nd->kind = ND_RET;
         nd->op1 = expr();
-        if(!expect(";")) error(tk, "expected ';'");
+        if(!expect(";")) error(cur, "expected ';'");
     }
     else{
         nd = expr();
-        if(!expect(";")) error(tk, "expected ';'");
+        if(!expect(";")) error(cur, "expected ';'");
     }
     return nd;
 }
@@ -440,17 +440,17 @@ node *primary(){
         expect(")");
         return nd;
     }
-    if(tk->kind == TK_ID){
-        token *tok = tk;
-        tk = tk->next;
+    if(cur->kind == TK_ID){
+        token *id = cur;
+        cur = cur->next;
 
         if(expect("(")){
             node *nd = calloc(1, sizeof(node));
             func *fn = calloc(1, sizeof(func));
             nd->kind = ND_FUNC_CALL;
             nd->fn = fn;
-            fn->name = tok->str;
-            fn->len = tok->len;
+            fn->name = id->str;
+            fn->len = id->len;
             fn->arg_num = 0;
 
             nd->ty = calloc(1, sizeof(type));
@@ -462,11 +462,11 @@ node *primary(){
                 }
             }
 
-            node *cur;
+            node *arg;
             while(!expect(")")){
-                cur = expr();
-                cur->next = fn->args_head;
-                fn->args_head = cur;
+                arg = expr();
+                arg->next = fn->args_head;
+                fn->args_head = arg;
                 fn->arg_num++;
                 if(expect(",")){
                     continue;
@@ -474,7 +474,7 @@ node *primary(){
                     if(expect(")")){
                         break;
                     }else{
-                        error(tk, "expected ',' or ')'");
+                        error(cur, "expected ',' or ')'");
                     }
                 }
             }
@@ -483,18 +483,18 @@ node *primary(){
             node *nd = calloc(1, sizeof(node));
             nd->kind = ND_LOCAL;
 
-            local *var = find_local(tok);
+            local *var = find_local(id);
             if(var){
                 nd->ty = var->ty;
                 nd->offset = var->offset;
             }else{
-                error(tok, "'%.*s' is undeclared", tok->len, tok->str);
+                error(id, "'%.*s' is undeclared", id->len, id->str);
             }
             return nd;
         }
     }
-    if(tk->kind == TK_NUM){
+    if(cur->kind == TK_NUM){
         return node_num(get_number());
     }
-    error(tk, "unexpected token");
+    error(cur, "unexpected token");
 }
