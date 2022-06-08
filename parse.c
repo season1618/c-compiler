@@ -69,15 +69,6 @@ type *get_type(){
     return ty;
 }
 
-char *get_id(){
-    if(cur->kind != TK_ID){
-        error(cur, "unexpected token");
-    }
-    char *str = cur->str;
-    cur = cur->next;
-    return str;
-}
-
 int get_number(){
     if(cur->kind != TK_NUM){
         error(cur, "unexpected token");
@@ -221,6 +212,20 @@ node *node_sizeof(node *op){
     nd->ty = calloc(1, sizeof(type));
     nd->ty->kind = INT;
     nd->val = size_of(op->ty);
+    return nd;
+}
+
+node *node_local(token *id){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_LOCAL;
+
+    local *var = find_local(id);
+    if(var){
+        nd->ty = var->ty;
+        nd->offset = var->offset;
+    }else{
+        error(id, "'%.*s' is undeclared", id->len, id->str);
+    }
     return nd;
 }
 
@@ -512,21 +517,12 @@ node *primary(){
         cur = cur->next;
 
         if(expect("[")){
-            node *nd = calloc(1, sizeof(node));
-            nd->kind = ND_LOCAL;
-
-            local *var = find_local(id);
-            if(var){
-                nd->ty = var->ty;
-                nd->offset = var->offset;
-            }else{
-                error(id, "'%.*s' is undeclared", id->len, id->str);
-            }
+            node *loc = node_local(id);
             node *size = expr();
             if(!expect("]")){
                 error(cur, "expect ']'");
             }
-            return node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
+            return node_unary(ND_DEREF, node_binary(ND_ADD, loc, size));
         }
         if(expect("(")){
             node *nd = calloc(1, sizeof(node));
@@ -564,17 +560,7 @@ node *primary(){
             }
             return nd;
         }else{
-            node *nd = calloc(1, sizeof(node));
-            nd->kind = ND_LOCAL;
-
-            local *var = find_local(id);
-            if(var){
-                nd->ty = var->ty;
-                nd->offset = var->offset;
-            }else{
-                error(id, "'%.*s' is undeclared", id->len, id->str);
-            }
-            return nd;
+            return node_local(id);
         }
     }
     if(cur->kind == TK_NUM){
