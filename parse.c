@@ -141,7 +141,12 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
 
     switch(kind){
         case ND_ASSIGN:
-            nd->ty = rhs->ty;
+            if(lhs->ty->kind == PTR && rhs->ty->kind == ARRAY && match_type(lhs->ty->ptr_to, rhs->ty->ptr_to)){
+                nd->ty = lhs->ty;
+            }
+            else{
+                nd->ty = rhs->ty;
+            }
             break;
         case ND_EQ:
         case ND_NEQ:
@@ -154,17 +159,26 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             }
             break;
         case ND_ADD:
-        case ND_SUB:
-            if(lhs->ty->kind == PTR && lhs->ty->ptr_to->kind == INT && rhs->ty->kind == INT){
+            if(lhs->ty->ptr_to && match_type(lhs->ty->ptr_to, rhs->ty)){
                 nd->ty = lhs->ty;
-                rhs->val *= 4;
-            }else if(lhs->ty->kind == INT && rhs->ty->kind == PTR && rhs->ty->ptr_to->kind == INT){
+                rhs->val *= size_of(rhs->ty);
+            }else if(rhs->ty->ptr_to && match_type(lhs->ty, rhs->ty->ptr_to)){
                 nd->ty = rhs->ty;
-                lhs->val *= 4;
+                lhs->val *= size_of(lhs->ty);
             }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty = lhs->ty;
             }else{
-                error(cur, "invalid operands to binary + or -");
+                error(cur, "invalid operands to binary +");
+            }
+            break;
+        case ND_SUB:
+            if(lhs->ty->ptr_to && match_type(lhs->ty->ptr_to, rhs->ty)){
+                nd->ty = lhs->ty;
+                rhs->val *= size_of(rhs->ty);
+            }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+                nd->ty = lhs->ty;
+            }else{
+                error(cur, "invalid operands to binary -");
             }
             break;
         case ND_MUL:
@@ -172,7 +186,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty->kind = INT;
             }else{
-                error(cur, "invalid operands to binary * or ");
+                error(cur, "invalid operands to binary * or /");
             }
             break;
     }
@@ -497,6 +511,20 @@ node *primary(){
         token *id = cur;
         cur = cur->next;
 
+        // if(expect("[")){
+        //     node *nd = calloc(1, sizeof(node));
+        //     nd->kind = ND_LOCAL;
+
+        //     local *var = find_local(id);
+        //     if(var){
+        //         nd->ty = var->ty;
+        //         nd->offset = var->offset;
+        //     }else{
+        //         error(id, "'%.*s' is undeclared", id->len, id->str);
+        //     }
+        //     node *size = expr();
+        //     return node_unary(ND_DEREF, node_binary(nd, size));
+        // }
         if(expect("(")){
             node *nd = calloc(1, sizeof(node));
             func *fn = calloc(1, sizeof(func));
