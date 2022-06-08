@@ -511,20 +511,23 @@ node *primary(){
         token *id = cur;
         cur = cur->next;
 
-        // if(expect("[")){
-        //     node *nd = calloc(1, sizeof(node));
-        //     nd->kind = ND_LOCAL;
+        if(expect("[")){
+            node *nd = calloc(1, sizeof(node));
+            nd->kind = ND_LOCAL;
 
-        //     local *var = find_local(id);
-        //     if(var){
-        //         nd->ty = var->ty;
-        //         nd->offset = var->offset;
-        //     }else{
-        //         error(id, "'%.*s' is undeclared", id->len, id->str);
-        //     }
-        //     node *size = expr();
-        //     return node_unary(ND_DEREF, node_binary(nd, size));
-        // }
+            local *var = find_local(id);
+            if(var){
+                nd->ty = var->ty;
+                nd->offset = var->offset;
+            }else{
+                error(id, "'%.*s' is undeclared", id->len, id->str);
+            }
+            node *size = expr();
+            if(!expect("]")){
+                error(cur, "expect ']'");
+            }
+            return node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
+        }
         if(expect("(")){
             node *nd = calloc(1, sizeof(node));
             func *fn = calloc(1, sizeof(func));
