@@ -9,8 +9,7 @@ token *cur;
 node **prg;
 local *local_head;
 
-node *func_def();
-void *dec();
+void *dcl();
 node *stmt();
 node *expr();
 node *assign();
@@ -204,59 +203,68 @@ node **program(token *token_head){
     prg = calloc(100, sizeof(node*));
     int i = 0;
     while(!is_eof()){
-        if(cur->kind == TK_TYPE){
-            prg[i] = func_def();
-            i++;
+        type *ty = get_type();
+        token *id = cur;
+        cur = cur->next;
+
+        // gloval variable
+        if(expect(";")){
             continue;
         }
-        // if(cur->kind == TK_TYPE){
-        //     dec();
-        //     continue;
-        // }
-        error(cur, "return type is unknown");
-    }
-    prg[i] = NULL;
-    return prg;
-}
 
-node *func_def(){
-    node *nd = calloc(1, sizeof(node));
-    func *fn = calloc(1, sizeof(func));
-    local_head = calloc(1, sizeof(local));
-
-    nd->kind = ND_FUNC_DEF;
-    nd->fn = fn;
-    fn->ty = get_type();
-    fn->name = cur->str;
-    fn->len = cur->len;
-    fn->arg_num = 0;
-
-    cur = cur->next;
-    expect("(");
-    while(!expect(")")){
-        if(cur->kind == TK_TYPE){
-            add_local();
-        }else{
-            error(cur, "expected type");
-        }
-        fn->arg_num++;
-        if(expect(",")){
+        // array
+        if(expect("[")){
+            node *nd = expr();
+            if(!expect("]")){
+                error(cur, "expect ']'");
+            }
             continue;
-        }else{
-            if(expect(")")){
-                break;
+        }
+
+        // function
+        if(expect("(")){
+            node *nd = calloc(1, sizeof(node));
+            func *fn = calloc(1, sizeof(func));
+            local_head = calloc(1, sizeof(local));
+
+            nd->kind = ND_FUNC_DEF;
+            nd->fn = fn;
+            fn->ty = ty;
+            fn->name = id->str;
+            fn->len = id->len;
+            fn->arg_num = 0;
+
+            while(!expect(")")){
+                if(cur->kind == TK_TYPE){
+                    add_local();
+                }else{
+                    error(cur, "expected type");
+                }
+                fn->arg_num++;
+                if(expect(",")){
+                    continue;
+                }else{
+                    if(expect(")")){
+                        break;
+                    }else{
+                        error(cur, "expected ',' or ')'");
+                    }
+                }
+            }
+
+            if(cur->str[0] == '{'){
+                fn->stmt = stmt();
+                fn->local_size = local_head->offset;
+                prg[i] = nd;
+                i++;
+                continue;
             }else{
-                error(cur, "expected ',' or ')'");
+                error(cur, "expected '{'");
             }
         }
     }
-    if(cur->str[0] == '{'){
-        fn->stmt = stmt();
-        fn->local_size = local_head->offset;
-        return nd;
-    }else{
-        error(cur, "expected '{'");
-    }
+    prg[i] = NULL;
+    return prg;
 }
 
 void *dec(){
