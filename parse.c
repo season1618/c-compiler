@@ -7,7 +7,8 @@
 
 token *cur;
 node **prg;
-local *local_head;
+symb *global_head;
+symb *local_head;
 
 void dcl();
 node *stmt();
@@ -82,8 +83,18 @@ bool is_eof(){
     return cur->kind == TK_EOF;
 }
 
+void *add_global(type *ty, token *tk){
+    symb *var = calloc(1, sizeof(symb));
+    var->next = global_head;
+    var->ty = ty;
+    var->name = tk->str;
+    var->len = tk->len;
+
+    global_head = var;
+}
+
 void *add_local(type *ty, token *tk){
-    local *var = calloc(1, sizeof(local));
+    symb *var = calloc(1, sizeof(symb));
     var->next = local_head;
     var->ty = ty;
     var->name = tk->str;
@@ -104,15 +115,6 @@ void *add_local(type *ty, token *tk){
     local_head = var;
 }
 
-local *find_local(token *tk){
-    for(local *var = local_head; var; var = var->next){
-        if(var->len == tk->len && memcmp(var->name, tk->str, var->len) == 0){
-            return var;
-        }
-    }
-    return NULL;
-}
-
 bool match_type(type *t1, type *t2){
     if(t1->kind == PTR && t2->kind == PTR){
         return match_type(t1->ptr_to, t2->ptr_to);
@@ -121,6 +123,16 @@ bool match_type(type *t1, type *t2){
         return true;
     }
     return false;
+}
+
+node *node_global_def(type *ty, token *id){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_GLOBAL_DEF;
+    nd->ty = ty;
+    nd->name = id->str;
+    nd->len = id->len;
+    nd->offset = size_of(ty);
+    return nd;
 }
 
 node *node_binary(node_kind kind, node *lhs, node *rhs){
@@ -215,18 +227,27 @@ node *node_sizeof(node *op){
     return nd;
 }
 
-node *node_local(token *id){
+node *node_symbol(token *id){
     node *nd = calloc(1, sizeof(node));
-    nd->kind = ND_LOCAL;
 
-    local *var = find_local(id);
-    if(var){
-        nd->ty = var->ty;
-        nd->offset = var->offset;
-    }else{
-        error(id, "'%.*s' is undeclared", id->len, id->str);
+    for(symb *var = local_head; var; var = var->next){
+        if(var->len == id->len && memcmp(var->name, id->str, var->len) == 0){
+            nd->kind = ND_LOCAL;
+            nd->ty = var->ty;
+            nd->offset = var->offset;
+            return nd;
+        }
     }
-    return nd;
+    for(symb *var = global_head; var; var = var->next){
+        if(var->len == id->len && memcmp(var->name, id->str, var->len) == 0){
+            nd->kind = ND_GLOBAL;
+            nd->ty = var->ty;
+            nd->name = var->name;
+            nd->len = var->len;
+            return nd;
+        }
+    }
+    error(id, "'%.*s' is undeclared", id->len, id->str);
 }
 
 node *node_num(int val){
@@ -250,6 +271,9 @@ node **program(token *token_head){
 
         // gloval variable
         if(expect(";")){
+            add_global(ty, id);
+            prg[i] = node_global_def(ty, id);
+            i++;
             continue;
         }
 
@@ -266,7 +290,7 @@ node **program(token *token_head){
         if(expect("(")){
             node *nd = calloc(1, sizeof(node));
             func *fn = calloc(1, sizeof(func));
-            local_head = calloc(1, sizeof(local));
+            local_head = calloc(1, sizeof(symb));
 
             nd->kind = ND_FUNC_DEF;
             nd->fn = fn;
@@ -316,7 +340,7 @@ void dcl(){
     token *id = cur;
     cur = cur->next;
 
-    // variable
+    // local variable
     if(expect(";")){
         add_local(ty, id);
         return;
@@ -517,7 +541,7 @@ node *primary(){
         cur = cur->next;
 
         if(expect("[")){
-            node *loc = node_local(id);
+            node *loc = node_symbol(id);
             node *size = expr();
             if(!expect("]")){
                 error(cur, "expect ']'");
@@ -560,7 +584,7 @@ node *primary(){
             }
             return nd;
         }else{
-            return node_local(id);
+            return node_symbol(id);
         }
     }
     if(cur->kind == TK_NUM){

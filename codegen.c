@@ -9,6 +9,10 @@ void gen_stmt(node *nd);
 
 void gen_lval(node *nd){
     switch(nd->kind){
+        case ND_GLOBAL:
+            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
+            printf("    push rax\n");
+            return;
         case ND_LOCAL:
             printf("    mov rax, rbp\n");
             printf("    sub rax, %d\n", nd->offset);
@@ -156,6 +160,11 @@ void gen_stmt(node *nd){
             printf("    push rax\n");
             return;
         }
+        case ND_GLOBAL:{
+            printf("    mov rax, %.*s[rip]\n", nd->len, nd->name);
+            printf("    push rax\n");
+            return;
+        }
         case ND_LOCAL:
             printf("    mov rax, rbp\n");
             printf("    sub rax, %d\n", nd->offset);
@@ -210,36 +219,50 @@ void gen_stmt(node *nd){
     printf("    push rax\n");
 }
 
-void gen_func(node *nd){
-    func *fn = nd->fn;
+void gen_ext(node *nd){
+    switch(nd->kind){
+        case ND_FUNC_DEF:{
+            func *fn = nd->fn;
 
-    printf("%.*s:\n", fn->len, fn->name);
+            printf(".text\n");
+            printf("%.*s:\n", fn->len, fn->name);
+            
+            printf("    push rbp\n");
+            printf("    mov rbp, rsp\n");
+            printf("    sub rsp, %d\n", fn->local_size); // region of local variables
 
-    printf("    push rbp\n");
-    printf("    mov rbp, rsp\n");
-    printf("    sub rsp, %d\n", fn->local_size); // region of local variables
+            // move arguments from registers or the stack on the rbp to the stack under rbp.
+            for(int i = 0; i < fn->arg_num; i++){
+                if(i < 6){
+                    printf("    mov rax, rbp\n");
+                    printf("    sub rax, %d\n", 8 * (i + 1));
+                    printf("    mov [rax], %s\n", arg_reg_int[i]);
+                }else{
+                    printf("    mov rax, rbp\n");
+                    printf("    sub rax, %d\n", 8 * (i + 1));
+                    printf("    mov rbx, rbp\n");
+                    printf("    add rbx, %d\n", 8 * (i - 4));
+                    printf("    mov rbx, [rbx]\n");
+                    printf("    mov [rax], rbx\n");
+                }
+            }
 
-    // move arguments from registers or the stack on the rbp to the stack under rbp.
-    for(int i = 0; i < fn->arg_num; i++){
-        if(i < 6){
-            printf("    mov rax, rbp\n");
-            printf("    sub rax, %d\n", 8 * (i + 1));
-            printf("    mov [rax], %s\n", arg_reg_int[i]);
-        }else{
-            printf("    mov rax, rbp\n");
-            printf("    sub rax, %d\n", 8 * (i + 1));
-            printf("    mov rbx, rbp\n");
-            printf("    add rbx, %d\n", 8 * (i - 4));
-            printf("    mov rbx, [rbx]\n");
-            printf("    mov [rax], rbx\n");
+            gen_stmt(fn->stmt);
+
+            printf("    mov rsp, rbp\n");
+            printf("    pop rbp\n");
+            printf("    ret\n");
+
+            break;
+        }
+        case ND_GLOBAL_DEF:{
+            printf(".data\n");
+            printf("%.*s:\n", nd->len, nd->name);
+            printf("    .zero %d\n", nd->offset);
+
+            break;
         }
     }
-
-    gen_stmt(fn->stmt);
-
-    printf("    mov rsp, rbp\n");
-    printf("    pop rbp\n");
-    printf("    ret\n");
 }
 
 void gen_code(node **prg){
@@ -247,6 +270,6 @@ void gen_code(node **prg){
     printf(".global main\n");
 
     for(int i = 0; prg[i]; i++){
-        gen_func(prg[i]);
+        gen_ext(prg[i]);
     }    
 }

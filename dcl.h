@@ -10,6 +10,7 @@ typedef enum {
 typedef enum {
     // definition
     ND_FUNC_DEF,
+    ND_GLOBAL_DEF,
 
     // statement
     ND_IF,
@@ -37,6 +38,7 @@ typedef enum {
 
     // primary
     ND_FUNC_CALL,
+    ND_GLOBAL,
     ND_LOCAL,
     ND_NUM,
 } node_kind;
@@ -49,7 +51,7 @@ typedef enum {
 
 typedef struct token token;
 typedef struct func func;
-typedef struct local local;
+typedef struct symb symb;
 typedef struct node node;
 typedef struct type type;
 
@@ -67,8 +69,8 @@ struct type {
     size_t arr_size;
 };
 
-struct local {
-    local *next;
+struct symb {
+    symb *next;
     type *ty;
     char *name;
     int len;
@@ -90,8 +92,12 @@ struct node {
     node *op1, *op2, *op3, *op4; // ND_IF, ND_WHILE, ND_FOR, operator
     node *head; // ND_BLOCK
     node *next; // ND_BLOCK, ND_FUNC, ND_FUNC_DEF
+    
+    func *fn; // ND_FUNC_DEF, ND_FUNC
+    
     type *ty;
-    func *fn; // ND_FUNC, ND_FUNC_DEF
+    char *name;
+    int len;
     int offset; // ND_LOCAL
     int val; // ND_NUM
 };

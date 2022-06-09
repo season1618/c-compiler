@@ -46,5 +46,6 @@ assert 8 "int main(){ int *p; return sizeof p; }"
 assert 40 "int main(){ int a[10]; return sizeof a; }"
 assert 3 "int main(){ int a[2]; *a = 1; *(a + 1) = 2; int *p; p = a; return *p + *(p + 1); }"
 assert 3 "int main(){ int a[2]; a[0] = 1; a[1] = 2; return a[0] + a[1]; }"
+assert 1 "int a; int main(){ a = 1; return a; }"
 
 echo OK
