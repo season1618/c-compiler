@@ -158,7 +158,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             if(match_type(lhs->ty, rhs->ty)){
                 nd->ty->kind = INT;
             }else{
-                error(cur, "invalid operands to binary operator");
+                error(cur, "invalid operands to relational operator");
             }
             break;
         case ND_ADD:
@@ -170,7 +170,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
                 lhs->val *= size_of(lhs->ty);
             }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty = lhs->ty;
-            }else{
+            }else{printf("%d %d\n", lhs->ty->kind, rhs->ty->kind);
                 error(cur, "invalid operands to binary +");
             }
             break;
@@ -279,10 +279,17 @@ node **program(token *token_head){
 
         // array
         if(expect("[")){
-            node *nd = expr();
+            int size = get_number();
             if(!expect("]")){
                 error(cur, "expect ']'");
             }
+            if(!expect(";")){
+                error(cur, "expected ';'");
+            }
+            ty = type_array(ty, size);
+            add_global(ty, id);
+            prg[i] = node_global_def(ty, id);
+            i++;
             continue;
         }
 
@@ -541,12 +548,19 @@ node *primary(){
         cur = cur->next;
 
         if(expect("[")){
-            node *loc = node_symbol(id);
+            node *nd = node_symbol(id);
             node *size = expr();
             if(!expect("]")){
                 error(cur, "expect ']'");
             }
-            return node_unary(ND_DEREF, node_binary(ND_ADD, loc, size));
+            return node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
+            // switch(nd->kind){
+            //     case ND_GLOBAL:
+            //         nd->op1 = node_binary(ND_MUL, size, node_num(size_of(nd->ty)));
+            //         return nd;
+            //     case ND_LOCAL:
+            //         return node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
+            // }
         }
         if(expect("(")){
             node *nd = calloc(1, sizeof(node));

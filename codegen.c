@@ -161,14 +161,27 @@ void gen_stmt(node *nd){
             return;
         }
         case ND_GLOBAL:{
-            printf("    mov rax, %.*s[rip]\n", nd->len, nd->name);
+            // if(nd->op1){
+            //     gen_stmt(nd->op1);
+            //     printf("    pop rdi\n");
+            //     printf("    add rdi, rip\n");
+            //     printf("    mov rax, %.*s[rdi]\n", nd->len, nd->name);
+            // }else{
+            //     printf("    mov rax, %.*s[rip]\n", nd->len, nd->name);
+            // }
+            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
+            if(nd->ty->kind != ARRAY){
+                printf("    mov rax, [rax]\n");
+            }
             printf("    push rax\n");
             return;
         }
         case ND_LOCAL:
             printf("    mov rax, rbp\n");
             printf("    sub rax, %d\n", nd->offset);
-            printf("    mov rax, [rax]\n");
+            if(nd->ty->kind != ARRAY){
+                printf("    mov rax, [rax]\n");
+            }
             printf("    push rax\n");
             return;
         case ND_NUM:
