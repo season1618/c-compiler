@@ -47,6 +47,7 @@ typedef enum {
     PTR,
     ARRAY,
     INT,
+    CHAR,
 } type_kind;
 
 typedef struct token token;

@@ -161,17 +161,15 @@ void gen_stmt(node *nd){
             return;
         }
         case ND_GLOBAL:{
-            // if(nd->op1){
-            //     gen_stmt(nd->op1);
-            //     printf("    pop rdi\n");
-            //     printf("    add rdi, rip\n");
-            //     printf("    mov rax, %.*s[rdi]\n", nd->len, nd->name);
-            // }else{
-            //     printf("    mov rax, %.*s[rip]\n", nd->len, nd->name);
-            // }
             printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
-            if(nd->ty->kind != ARRAY){
-                printf("    mov rax, [rax]\n");
+            switch(nd->ty->kind){
+                case CHAR:
+                    printf("    movzb eax, BYTE PTR [rax]\n");
+                    break;
+                case INT:
+                case PTR:
+                    printf("    mov rax, [rax]\n");
+                    break;
             }
             printf("    push rax\n");
             return;
@@ -179,8 +177,14 @@ void gen_stmt(node *nd){
         case ND_LOCAL:
             printf("    mov rax, rbp\n");
             printf("    sub rax, %d\n", nd->offset);
-            if(nd->ty->kind != ARRAY){
-                printf("    mov rax, [rax]\n");
+            switch(nd->ty->kind){
+                case CHAR:
+                    printf("    movzb eax, BYTE PTR [rax]\n");
+                    break;
+                case INT:
+                case PTR:
+                    printf("    mov rax, [rax]\n");
+                    break;
             }
             printf("    push rax\n");
             return;

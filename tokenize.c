@@ -11,10 +11,10 @@ char *p;
 token *cur;
 
 int NUM_KEYWORD = 6;
-int NUM_TYPE = 1;
+int NUM_TYPE = 2;
 int NUM_PUNCT = 22;
 char *keywords[] = {"return", "if", "else", "while", "for", "sizeof"};
-char *types[] = {"int"};
+char *types[] = {"char", "int"};
 char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", "&", ":", ";", ",", ".", "<", ">", "(", ")", "{", "}", "[", "]"};
 
 bool is_alpha(char c){

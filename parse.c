@@ -47,6 +47,8 @@ type *type_array(type *base, size_t size){
 
 int size_of(type *ty){
     switch(ty->kind){
+        case CHAR:
+            return 1;
         case INT:
             return 4;
         case PTR:
@@ -61,7 +63,9 @@ type *get_type(){
         error(cur, "unexpected token");
     }
     type *ty = calloc(1, sizeof(type));
-    if(expect("int")){
+    if(expect("char")){
+        ty->kind = CHAR;
+    }else if(expect("int")){
         ty->kind = INT;
     }
     while(expect("*")){
@@ -116,13 +120,17 @@ void *add_local(type *ty, token *tk){
 }
 
 bool match_type(type *t1, type *t2){
-    if(t1->kind == PTR && t2->kind == PTR){
-        return match_type(t1->ptr_to, t2->ptr_to);
+    if(t1->kind != t2->kind){
+        return false;
     }
-    if(t1->kind == INT && t2->kind == INT){
-        return true;
+    switch(t1->kind){
+        case PTR:
+        case ARRAY:
+            return match_type(t1->ptr_to, t2->ptr_to);
+        case CHAR:
+        case INT:
+            return true;
     }
-    return false;
 }
 
 node *node_global_def(type *ty, token *id){
@@ -170,7 +178,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
                 lhs->val *= size_of(lhs->ty);
             }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty = lhs->ty;
-            }else{printf("%d %d\n", lhs->ty->kind, rhs->ty->kind);
+            }else{
                 error(cur, "invalid operands to binary +");
             }
             break;
@@ -209,11 +217,11 @@ node *node_unary(node_kind kind, node *op){
             nd->ty->ptr_to = op->ty;
             break;
         case ND_DEREF:
-            if(op->ty->kind == INT){
-                error(cur, "invalid type argument of unary '*' (have 'int')");
+            if(op->ty->kind == PTR || op->ty->kind == ARRAY){
+                nd->ty = op->ty->ptr_to;
+                break;
             }
-            nd->ty = op->ty->ptr_to;
-            break;
+            error(cur, "invalid type argument of unary '*'");
     }
     return nd;
 }
@@ -554,13 +562,6 @@ node *primary(){
                 error(cur, "expect ']'");
             }
             return node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
-            // switch(nd->kind){
-            //     case ND_GLOBAL:
-            //         nd->op1 = node_binary(ND_MUL, size, node_num(size_of(nd->ty)));
-            //         return nd;
-            //     case ND_LOCAL:
-            //         return node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
-            // }
         }
         if(expect("(")){
             node *nd = calloc(1, sizeof(node));
