@@ -32,6 +32,12 @@ bool expect(char *op){
     }
 }
 
+type *type_base(type_kind kind){
+    type *ty = calloc(1, sizeof(type));
+    ty->kind = kind;
+    return ty;
+}
+
 type *type_ptr(type *base){
     type *ty = calloc(1, sizeof(type));
     ty->kind = PTR;
@@ -89,12 +95,12 @@ bool is_eof(){
     return cur->kind == TK_EOF;
 }
 
-void *add_global(type *ty, token *tk){
+void *add_global(type *ty, token *id){
     symb *var = calloc(1, sizeof(symb));
     var->next = global_head;
     var->ty = ty;
-    var->name = tk->str;
-    var->len = tk->len;
+    var->name = id->str;
+    var->len = id->len;
 
     global_head = var;
 }
@@ -150,7 +156,6 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
     nd->kind = kind;
     nd->op1 = lhs;
     nd->op2 = rhs;
-    nd->ty = calloc(1, sizeof(type));
 
     switch(kind){
         case ND_ASSIGN:
@@ -166,21 +171,17 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_LT:
         case ND_LEQ:
             if(match_type(lhs->ty, rhs->ty)){
-                nd->ty->kind = INT;
+                nd->ty = type_base(INT);
             }else{
                 error(cur, "invalid operands to relational operator");
             }
             break;
         case ND_ADD:
             if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && rhs->ty->kind == INT){
-                nd->ty = calloc(1, sizeof(type));
-                nd->ty->kind = PTR;
-                nd->ty->ptr_to = lhs->ty->ptr_to;
+                nd->ty = type_ptr(lhs->ty->ptr_to);
                 rhs->val *= size_of(lhs->ty->ptr_to);
             }else if((rhs->ty->kind == PTR || rhs->ty->kind == ARRAY) && lhs->ty->kind == INT){
-                nd->ty = calloc(1, sizeof(type));
-                nd->ty->kind = PTR;
-                nd->ty->ptr_to = rhs->ty->ptr_to;
+                nd->ty = type_ptr(rhs->ty->ptr_to);
                 lhs->val *= size_of(rhs->ty->ptr_to);
             }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty = lhs->ty;
@@ -201,7 +202,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_MUL:
         case ND_DIV:
             if(lhs->ty->kind == INT && rhs->ty->kind == INT){
-                nd->ty->kind = INT;
+                nd->ty = type_base(INT);
             }else{
                 error(cur, "invalid operands to binary * or /");
             }
@@ -214,13 +215,10 @@ node *node_unary(node_kind kind, node *op){
     node *nd = calloc(1, sizeof(node));
     nd->kind = kind;
     nd->op1 = op;
-    nd->ty = calloc(1, sizeof(type));
 
     switch(kind){
         case ND_ADR:
-            nd->ty = calloc(1, sizeof(type));
-            nd->ty->kind = PTR;
-            nd->ty->ptr_to = op->ty;
+            nd->ty = type_ptr(op->ty);
             break;
         case ND_DEREF:
             if(op->ty->kind == PTR || op->ty->kind == ARRAY){
@@ -235,8 +233,7 @@ node *node_unary(node_kind kind, node *op){
 node *node_sizeof(node *op){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_NUM;
-    nd->ty = calloc(1, sizeof(type));
-    nd->ty->kind = INT;
+    nd->ty = type_base(INT);
     nd->val = size_of(op->ty);
     return nd;
 }
@@ -267,8 +264,7 @@ node *node_symbol(token *id){
 node *node_num(int val){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_NUM;
-    nd->ty = calloc(1, sizeof(type));
-    nd->ty->kind = INT;
+    nd->ty = type_base(INT);
     nd->val = val;
     return nd;
 }
@@ -276,10 +272,7 @@ node *node_num(int val){
 node *node_string(){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_STRING;
-    nd->ty = calloc(1, sizeof(type));
-    nd->ty->kind = PTR;
-    nd->ty->ptr_to = calloc(1, sizeof(type));
-    nd->ty->ptr_to->kind = CHAR;
+    nd->ty = type_ptr(type_base(CHAR));
     nd->offset = lc_num;
 
     cur = cur->next;
