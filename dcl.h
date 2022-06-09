@@ -1,9 +1,10 @@
 typedef enum {
     TK_KEYWORD,
     TK_TYPE,
+    TK_PUNCT,
     TK_ID,
     TK_NUM,
-    TK_PUNCT,
+    TK_STRING,
     TK_EOF,
 } token_kind;
 
@@ -11,6 +12,7 @@ typedef enum {
     // definition
     ND_FUNC_DEF,
     ND_GLOBAL_DEF,
+    ND_LOCAL_CONST,
 
     // statement
     ND_IF,
@@ -41,6 +43,7 @@ typedef enum {
     ND_GLOBAL,
     ND_LOCAL,
     ND_NUM,
+    ND_STRING,
 } node_kind;
 
 typedef enum {
@@ -59,9 +62,9 @@ typedef struct type type;
 struct token {
     token_kind kind;
     token *next;
-    int val; // kind == TK_NUM
     char *str;
     int len;
+    int val; // TK_NUM
 };
 
 struct type {

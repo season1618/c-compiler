@@ -48,5 +48,6 @@ assert 3 "int main(){ int a[2]; *a = 1; *(a + 1) = 2; int *p; p = a; return *p +
 assert 3 "int main(){ int a[2]; a[0] = 1; a[1] = 2; return a[0] + a[1]; }"
 assert 3 "int a[2]; int main(){ a[0] = 1; a[1] = 2; return a[0] + a[1]; }"
 assert 0 "int main(){ char a; a = 256; return a; }"
+assert 97 "int main(){ char *c; c = \"abcdef\"; return c[0]; }"
 
 echo OK

@@ -69,6 +69,21 @@ void next_identifier(){
     cur = nxt;
 }
 
+void next_string(){
+    p++;
+    token *nxt = calloc(1, sizeof(token));
+    nxt->kind = TK_STRING;
+    nxt->str = p;
+    nxt->len = 0;
+    while(*p != '\"'){
+        p++;
+        nxt->len++;
+    }
+    p++;
+    cur->next = nxt;
+    cur = nxt;
+}
+
 bool read_keyword(){
     for(int i = 0; i < NUM_KEYWORD; i++){
         if(fwdmatch(keywords[i]) && !is_alnum(p[strlen(keywords[i])])){
@@ -109,6 +124,10 @@ token *tokenize(char *code_head){
     while(*p){
         if(isspace(*p)){
             p++;
+            continue;
+        }
+        if(*p == '\"'){
+            next_string();
             continue;
         }
         if(read_keyword()) continue;

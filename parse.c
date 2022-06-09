@@ -9,6 +9,8 @@ token *cur;
 node **prg;
 symb *global_head;
 symb *local_head;
+int prg_num = 0;
+int lc_num = 0;
 
 void dcl();
 node *stmt();
@@ -170,12 +172,16 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             }
             break;
         case ND_ADD:
-            if(lhs->ty->ptr_to && match_type(lhs->ty->ptr_to, rhs->ty)){
-                nd->ty = lhs->ty;
-                rhs->val *= size_of(rhs->ty);
-            }else if(rhs->ty->ptr_to && match_type(lhs->ty, rhs->ty->ptr_to)){
-                nd->ty = rhs->ty;
-                lhs->val *= size_of(lhs->ty);
+            if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && rhs->ty->kind == INT){
+                nd->ty = calloc(1, sizeof(type));
+                nd->ty->kind = PTR;
+                nd->ty->ptr_to = lhs->ty->ptr_to;
+                rhs->val *= size_of(lhs->ty->ptr_to);
+            }else if((rhs->ty->kind == PTR || rhs->ty->kind == ARRAY) && lhs->ty->kind == INT){
+                nd->ty = calloc(1, sizeof(type));
+                nd->ty->kind = PTR;
+                nd->ty->ptr_to = rhs->ty->ptr_to;
+                lhs->val *= size_of(rhs->ty->ptr_to);
             }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty = lhs->ty;
             }else{
@@ -267,11 +273,25 @@ node *node_num(int val){
     return nd;
 }
 
+node *node_string(){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_STRING;
+    nd->ty = calloc(1, sizeof(type));
+    nd->ty->kind = PTR;
+    nd->ty->ptr_to = calloc(1, sizeof(type));
+    nd->ty->ptr_to->kind = CHAR;
+    nd->offset = lc_num;
+
+    cur = cur->next;
+    lc_num++;
+
+    return nd;
+}
+
 node **program(token *token_head){
     cur = token_head;
 
     prg = calloc(100, sizeof(node*));
-    int i = 0;
     while(!is_eof()){
         type *ty = get_type();
         token *id = cur;
@@ -280,8 +300,8 @@ node **program(token *token_head){
         // gloval variable
         if(expect(";")){
             add_global(ty, id);
-            prg[i] = node_global_def(ty, id);
-            i++;
+            prg[prg_num] = node_global_def(ty, id);
+            prg_num++;
             continue;
         }
 
@@ -296,8 +316,8 @@ node **program(token *token_head){
             }
             ty = type_array(ty, size);
             add_global(ty, id);
-            prg[i] = node_global_def(ty, id);
-            i++;
+            prg[prg_num] = node_global_def(ty, id);
+            prg_num++;
             continue;
         }
 
@@ -338,15 +358,15 @@ node **program(token *token_head){
             if(cur->str[0] == '{'){
                 fn->stmt = stmt();
                 fn->local_size = local_head->offset;
-                prg[i] = nd;
-                i++;
+                prg[prg_num] = nd;
+                prg_num++;
                 continue;
             }else{
                 error(cur, "expected '{'");
             }
         }
     }
-    prg[i] = NULL;
+    prg[prg_num] = NULL;
     return prg;
 }
 
@@ -604,6 +624,16 @@ node *primary(){
     }
     if(cur->kind == TK_NUM){
         return node_num(get_number());
+    }
+    if(cur->kind == TK_STRING){
+        node *nd = calloc(1, sizeof(node));
+        nd->kind = ND_LOCAL_CONST;
+        nd->name = cur->str;
+        nd->len = cur->len;
+        nd->offset = lc_num;
+        prg[prg_num] = nd;
+        prg_num++;
+        return node_string();
     }
     error(cur, "unexpected token");
 }

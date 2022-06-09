@@ -191,6 +191,10 @@ void gen_stmt(node *nd){
         case ND_NUM:
             printf("    push %d\n", nd->val);
             return;
+        case ND_STRING:
+            printf("    lea rax, .LC%d[rip]\n", nd->offset);
+            printf("    push rax\n");
+            return;
     }
 
     gen_stmt(nd->op1);
@@ -272,13 +276,16 @@ void gen_ext(node *nd){
 
             break;
         }
-        case ND_GLOBAL_DEF:{
+        case ND_GLOBAL_DEF:
             printf(".data\n");
             printf("%.*s:\n", nd->len, nd->name);
             printf("    .zero %d\n", nd->offset);
-
             break;
-        }
+        case ND_LOCAL_CONST:
+            printf(".data\n");
+            printf(".LC%d:\n", nd->offset);
+            printf("    .string \"%.*s\"\n", nd->len, nd->name);
+            break;
     }
 }
 
