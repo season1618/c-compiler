@@ -54,10 +54,9 @@ typedef enum {
 } type_kind;
 
 typedef struct token token;
-typedef struct func func;
+typedef struct type type;
 typedef struct symb symb;
 typedef struct node node;
-typedef struct type type;
 
 struct token {
     token_kind kind;
@@ -93,7 +92,7 @@ struct node {
     int val;
 };
 
-extern void error(token *token, char *fmt, ...);
+extern void error(token *tk, char *fmt, ...);
 extern token *tokenize(char *p);
-extern node **program(token *token_head);
-extern void gen_code(node **prg);
+extern node *program(token *token_head);
+extern void gen_code(node *node_head);

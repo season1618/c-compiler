@@ -10,12 +10,12 @@ void gen_stmt();
 void gen_lval();
 void gen_expr();
 
-void gen_code(node **prg){
+void gen_code(node *node_head){
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
 
-    for(int i = 0; prg[i]; i++){
-        gen_ext(prg[i]);
+    for(node *nd = node_head; nd; nd = nd->next){
+        gen_ext(nd);
     }    
 }
 

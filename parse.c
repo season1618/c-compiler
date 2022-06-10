@@ -6,10 +6,9 @@
 #include "dcl.h"
 
 token *cur;
-node **prg;
+node *head, *tail;
 symb *global_head;
 symb *local_head;
-int prg_num = 0;
 int lc_num = 0;
 
 void dcl();
@@ -95,7 +94,12 @@ bool is_eof(){
     return cur->kind == TK_EOF;
 }
 
-void *add_global(type *ty, token *id){
+void add_ext(node *nd){
+    tail->next = nd;
+    tail = nd;
+}
+
+void add_global(type *ty, token *id){
     symb *var = calloc(1, sizeof(symb));
     var->next = global_head;
     var->ty = ty;
@@ -105,7 +109,7 @@ void *add_global(type *ty, token *id){
     global_head = var;
 }
 
-void *add_local(type *ty, token *tk){
+void add_local(type *ty, token *tk){
     symb *var = calloc(1, sizeof(symb));
     var->next = local_head;
     var->ty = ty;
@@ -313,10 +317,11 @@ node *node_string(){
     return nd;
 }
 
-node **program(token *token_head){
+node *program(token *token_head){
     cur = token_head;
+    head = calloc(1, sizeof(node*));
+    tail = head;
 
-    prg = calloc(100, sizeof(node*));
     while(!is_eof()){
         type *ty = get_type();
         token *id = cur;
@@ -325,8 +330,7 @@ node **program(token *token_head){
         // gloval variable
         if(expect(";")){
             add_global(ty, id);
-            prg[prg_num] = node_global_def(ty, id);
-            prg_num++;
+            add_ext(node_global_def(ty, id));
             continue;
         }
 
@@ -341,8 +345,7 @@ node **program(token *token_head){
             }
             ty = type_array(ty, size);
             add_global(ty, id);
-            prg[prg_num] = node_global_def(ty, id);
-            prg_num++;
+            add_ext(node_global_def(ty, id));
             continue;
         }
 
@@ -385,16 +388,14 @@ node **program(token *token_head){
                 add_global(ty, id);
                 nd->op1 = stmt();
                 nd->offset = local_head->offset;
-                prg[prg_num] = nd;
-                prg_num++;
+                add_ext(nd);
             }else{
                 error(cur, "expected ';'");
             }
             continue;
         }
     }
-    prg[prg_num] = NULL;
-    return prg;
+    return head->next;
 }
 
 void dcl(){
@@ -432,8 +433,7 @@ node *stmt(){
         while(!expect("}")){
             if(cur->kind == TK_TYPE){
                 dcl();
-            }
-            else{
+            }else{
                 elm->next = stmt();
                 elm = elm->next;
             }
@@ -625,8 +625,7 @@ node *primary(){
         nd->name = cur->str;
         nd->len = cur->len;
         nd->offset = lc_num;
-        prg[prg_num] = nd;
-        prg_num++;
+        add_ext(nd);
         return node_string();
     }
     error(cur, "unexpected token");

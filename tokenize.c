@@ -118,7 +118,6 @@ token *tokenize(char *code_head){
     p = code_head;
 
     token *head = calloc(1, sizeof(token));
-    head->next = NULL;
     cur = head;
 
     while(*p){

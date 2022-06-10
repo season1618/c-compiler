@@ -6,11 +6,11 @@
 
 char *code_head;
 
-void error(token *token, char *fmt, ...){
+void error(token *tk, char *fmt, ...){
     va_list ap;
     va_start(ap, fmt);
 
-    int pos = token->str - code_head;
+    int pos = tk->str - code_head;
     fprintf(stderr, "%s\n", code_head);
     fprintf(stderr, "%*s", pos, " ");
     fprintf(stderr, "^ ");
@@ -27,7 +27,7 @@ int main(int argc, char **argv){
 
     code_head = argv[1];
     token *token_head = tokenize(code_head);
-    node **prg = program(token_head);
-    gen_code(prg);
+    node *node_head = program(token_head);
+    gen_code(node_head);
     return 0;
 }
