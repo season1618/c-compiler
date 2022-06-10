@@ -317,15 +317,13 @@ node **program(token *token_head){
         // function
         if(expect("(")){
             node *nd = calloc(1, sizeof(node));
-            func *fn = calloc(1, sizeof(func));
             local_head = calloc(1, sizeof(symb));
 
             nd->kind = ND_FUNC_DEF;
-            nd->fn = fn;
-            fn->ty = ty;
-            fn->name = id->str;
-            fn->len = id->len;
-            fn->arg_num = 0;
+            nd->ty = ty;
+            nd->name = id->str;
+            nd->len = id->len;
+            nd->val = 0;
 
             while(!expect(")")){
                 if(cur->kind == TK_TYPE){
@@ -336,7 +334,7 @@ node **program(token *token_head){
                 }else{
                     error(cur, "expected type");
                 }
-                fn->arg_num++;
+                nd->val++;
                 if(expect(",")){
                     continue;
                 }else{
@@ -349,8 +347,8 @@ node **program(token *token_head){
             }
 
             if(cur->str[0] == '{'){
-                fn->stmt = stmt();
-                fn->local_size = local_head->offset;
+                nd->op1 = stmt();
+                nd->offset = local_head->offset;
                 prg[prg_num] = nd;
                 prg_num++;
                 continue;
@@ -578,18 +576,16 @@ node *primary(){
         }
         if(expect("(")){
             node *nd = calloc(1, sizeof(node));
-            func *fn = calloc(1, sizeof(func));
             nd->kind = ND_FUNC_CALL;
-            nd->fn = fn;
-            fn->name = id->str;
-            fn->len = id->len;
-            fn->arg_num = 0;
+            nd->name = id->str;
+            nd->len = id->len;
+            nd->val = 0;
 
             nd->ty = calloc(1, sizeof(type));
             nd->ty->kind = INT;
             for(int i = 0; i < 100; i++){
-                if(prg[i] && prg[i]->kind == ND_FUNC_DEF && memcmp(prg[i]->fn->name, fn->name, fn->len) == 0){
-                    nd->ty = prg[i]->fn->ty;
+                if(prg[i] && prg[i]->kind == ND_FUNC_DEF && memcmp(prg[i]->name, nd->name, nd->len) == 0){
+                    nd->ty = prg[i]->ty;
                     break;
                 }
             }
@@ -597,9 +593,9 @@ node *primary(){
             node *arg;
             while(!expect(")")){
                 arg = expr();
-                arg->next = fn->args_head;
-                fn->args_head = arg;
-                fn->arg_num++;
+                arg->next = nd->head;
+                nd->head = arg;
+                nd->val++;
                 if(expect(",")){
                     continue;
                 }else{

@@ -22,17 +22,15 @@ void gen_code(node **prg){
 void gen_ext(node *nd){
     switch(nd->kind){
         case ND_FUNC_DEF:{
-            func *fn = nd->fn;
-
             printf(".text\n");
-            printf("%.*s:\n", fn->len, fn->name);
+            printf("%.*s:\n", nd->len, nd->name);
             
             printf("    push rbp\n");
             printf("    mov rbp, rsp\n");
-            printf("    sub rsp, %d\n", fn->local_size); // region of local variables
+            printf("    sub rsp, %d\n", nd->offset); // region of local variables
 
             // move arguments from registers or the stack on the rbp to the stack under rbp.
-            for(int i = 0; i < fn->arg_num; i++){
+            for(int i = 0; i < nd->val; i++){
                 if(i < 6){
                     printf("    mov rax, rbp\n");
                     printf("    sub rax, %d\n", 8 * (i + 1));
@@ -47,7 +45,7 @@ void gen_ext(node *nd){
                 }
             }
 
-            gen_stmt(fn->stmt);
+            gen_stmt(nd->op1);
 
             printf("    mov rsp, rbp\n");
             printf("    pop rbp\n");
@@ -196,9 +194,8 @@ void gen_expr(node *nd){
         
         // primary
         case ND_FUNC_CALL:{
-            func *fn = nd->fn;
             int num_stack_var;
-            if(fn->arg_num > 6) num_stack_var = fn->arg_num - 6;
+            if(nd->val > 6) num_stack_var = nd->val - 6;
             else num_stack_var = 0;
 
             // adjust stack alignment
@@ -213,8 +210,8 @@ void gen_expr(node *nd){
             }
 
             // move arguments to a register or the stack
-            int i = fn->arg_num - 1;
-            node *cur = fn->args_head;
+            int i = nd->val - 1;
+            node *cur = nd->head;
             while(cur){
                 gen_expr(cur);
                 if(i < 6) printf("    pop %s\n", arg_reg_int[i]);
@@ -222,7 +219,7 @@ void gen_expr(node *nd){
                 i--;
             }
 
-            printf("    call %.*s\n", fn->len, fn->name);
+            printf("    call %.*s\n", nd->len, nd->name);
             for(int i = 0; i < num_stack_var; i++){
                 printf("    pop rdi\n");
             }

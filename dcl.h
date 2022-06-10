@@ -81,29 +81,16 @@ struct symb {
     int offset;
 };
 
-struct func {
-    type *ty;
-    char *name;
-    int len;
-    node *args_head;
-    int arg_num;
-    node *stmt;
-    int local_size;
-};
-
 struct node {
     node_kind kind;
-    node *op1, *op2, *op3, *op4; // ND_IF, ND_WHILE, ND_FOR, operator
-    node *head; // ND_BLOCK
-    node *next; // ND_BLOCK, ND_FUNC, ND_FUNC_DEF
-    
-    func *fn; // ND_FUNC_DEF, ND_FUNC
-    
+    node *op1, *op2, *op3, *op4;
+    node *head;
+    node *next;
     type *ty;
     char *name;
     int len;
-    int offset; // ND_LOCAL
-    int val; // ND_NUM
+    int offset;
+    int val;
 };
 
 extern void error(token *token, char *fmt, ...);
