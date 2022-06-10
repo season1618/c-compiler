@@ -32,6 +32,19 @@ bool expect(char *op){
     }
 }
 
+int size_of(type *ty){
+    switch(ty->kind){
+        case CHAR:
+            return 1;
+        case INT:
+            return 4;
+        case PTR:
+            return 8;
+        case ARRAY:
+            return size_of(ty->ptr_to) * ty->arr_size;
+    }
+}
+
 type *type_base(type_kind kind){
     type *ty = calloc(1, sizeof(type));
     ty->kind = kind;
@@ -51,19 +64,6 @@ type *type_array(type *base, size_t size){
     ty->ptr_to = base;
     ty->arr_size = size;
     return ty;
-}
-
-int size_of(type *ty){
-    switch(ty->kind){
-        case CHAR:
-            return 1;
-        case INT:
-            return 4;
-        case PTR:
-            return 8;
-        case ARRAY:
-            return size_of(ty->ptr_to) * ty->arr_size;
-    }
 }
 
 type *get_type(){
@@ -238,6 +238,38 @@ node *node_sizeof(node *op){
     return nd;
 }
 
+node *node_func_call(token *id){
+    node *nd = calloc(1, sizeof(node));
+    for(symb *var = global_head; var; var = var->next){
+        if(var->len == id->len && memcmp(var->name, id->str, var->len) == 0){
+            nd->kind = ND_FUNC_CALL;
+            nd->ty = var->ty;
+            nd->name = var->name;
+            nd->len = var->len;
+            nd->val = 0;
+
+            node *arg;
+            while(!expect(")")){
+                arg = expr();
+                arg->next = nd->head;
+                nd->head = arg;
+                nd->val++;
+                if(expect(",")){
+                    continue;
+                }else{
+                    if(expect(")")){
+                        break;
+                    }else{
+                        error(cur, "expected ',' or ')'");
+                    }
+                }
+            }
+            return nd;
+        }
+    }
+    error(id, "'%.*s' is undeclared", id->len, id->str);
+}
+
 node *node_symbol(token *id){
     node *nd = calloc(1, sizeof(node));
 
@@ -325,12 +357,13 @@ node **program(token *token_head){
             nd->len = id->len;
             nd->val = 0;
 
+            token *param;
             while(!expect(")")){
                 if(cur->kind == TK_TYPE){
                     ty = get_type();
-                    id = cur;
+                    param = cur;
                     cur = cur->next;
-                    add_local(ty, id);
+                    add_local(ty, param);
                 }else{
                     error(cur, "expected type");
                 }
@@ -346,15 +379,18 @@ node **program(token *token_head){
                 }
             }
 
-            if(cur->str[0] == '{'){
+            if(expect(";")){
+                add_global(ty, id);
+            }else if(cur->str[0] == '{'){
+                add_global(ty, id);
                 nd->op1 = stmt();
                 nd->offset = local_head->offset;
                 prg[prg_num] = nd;
                 prg_num++;
-                continue;
             }else{
-                error(cur, "expected '{'");
+                error(cur, "expected ';'");
             }
+            continue;
         }
     }
     prg[prg_num] = NULL;
@@ -575,38 +611,7 @@ node *primary(){
             return node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
         }
         if(expect("(")){
-            node *nd = calloc(1, sizeof(node));
-            nd->kind = ND_FUNC_CALL;
-            nd->name = id->str;
-            nd->len = id->len;
-            nd->val = 0;
-
-            nd->ty = calloc(1, sizeof(type));
-            nd->ty->kind = INT;
-            for(int i = 0; i < 100; i++){
-                if(prg[i] && prg[i]->kind == ND_FUNC_DEF && memcmp(prg[i]->name, nd->name, nd->len) == 0){
-                    nd->ty = prg[i]->ty;
-                    break;
-                }
-            }
-
-            node *arg;
-            while(!expect(")")){
-                arg = expr();
-                arg->next = nd->head;
-                nd->head = arg;
-                nd->val++;
-                if(expect(",")){
-                    continue;
-                }else{
-                    if(expect(")")){
-                        break;
-                    }else{
-                        error(cur, "expected ',' or ')'");
-                    }
-                }
-            }
-            return nd;
+            return node_func_call(id);
         }else{
             return node_symbol(id);
         }
