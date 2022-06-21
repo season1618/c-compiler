@@ -12,10 +12,10 @@ token *cur;
 
 int NUM_KEYWORD = 6;
 int NUM_TYPE = 2;
-int NUM_PUNCT = 22;
+int NUM_PUNCT = 23;
 char *keywords[] = {"return", "if", "else", "while", "for", "sizeof"};
 char *types[] = {"char", "int"};
-char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", "&", ":", ";", ",", ".", "<", ">", "(", ")", "{", "}", "[", "]"};
+char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", "%", "&", ":", ";", ",", ".", "<", ">", "(", ")", "{", "}", "[", "]"};
 
 bool is_alpha(char c){
     return c == '_' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
