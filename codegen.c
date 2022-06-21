@@ -219,6 +219,7 @@ void gen_expr(node *nd){
                 i--;
             }
 
+            printf("    mov al, 0\n");
             printf("    call %.*s\n", nd->len, nd->name);
             for(int i = 0; i < num_stack_var; i++){
                 printf("    pop rdi\n");
