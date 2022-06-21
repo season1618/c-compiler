@@ -92,7 +92,7 @@ struct node {
     int val;
 };
 
-extern void error(token *tk, char *fmt, ...);
-extern token *tokenize(char *p);
-extern node *program(token *token_head);
-extern void gen_code(node *node_head);
+extern void error();
+extern token *tokenize();
+extern node *program();
+extern void gen_code();

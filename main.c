@@ -6,6 +6,7 @@
 
 #include "dcl.h"
 
+char *file_name;
 char *code_head;
 
 void error_(char *fmt, ...) {
@@ -16,16 +17,29 @@ void error_(char *fmt, ...) {
     exit(1);
 }
 
-void error(token *tk, char *fmt, ...){
-    va_list ap;
-    va_start(ap, fmt);
+void error(token *tk, char *msg){
+    char *begin = tk->str;
+    while(code_head < begin && *(begin - 1) != '\n'){
+        begin--;
+    }
 
-    int pos = tk->str - code_head;
-    fprintf(stderr, "%s\n", code_head);
+    char *end = tk->str;
+    while(*end != '\n'){
+        end++;
+    }
+
+    int line_num = 1;
+    for(char *p = code_head; p < begin; p++){
+        if(*p == '\n') line_num++;
+    }
+
+    int indent = fprintf(stderr, "%s:%d: ", file_name, line_num);
+    fprintf(stderr, "%.*s\n", (int)(end - begin), begin);
+
+    int pos = tk->str - begin + indent;
     fprintf(stderr, "%*s", pos, " ");
-    fprintf(stderr, "^ ");
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+    fprintf(stderr, "^ %s\n", msg);
+    
     exit(1);
 }
 
@@ -62,9 +76,9 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    code_head = read_file(argv[1]);
+    file_name = argv[1];
+    code_head = read_file(file_name);
     token *token_head = tokenize(code_head);
     node *node_head = program(token_head);
     gen_code(node_head);
-    return 0;
 }
