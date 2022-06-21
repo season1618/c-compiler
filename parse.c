@@ -67,7 +67,7 @@ type *type_array(type *base, size_t size){
 
 type *get_type(){
     if(cur->kind != TK_TYPE){
-        error(cur, "unexpected token");
+        error(cur, "expected type");
     }
     type *ty = calloc(1, sizeof(type));
     if(expect("char")){
@@ -83,7 +83,7 @@ type *get_type(){
 
 int get_number(){
     if(cur->kind != TK_NUM){
-        error(cur, "unexpected token");
+        error(cur, "expected number");
     }
     int val = cur->val;
     cur = cur->next;
@@ -319,7 +319,7 @@ node *node_string(){
 
 node *program(token *token_head){
     cur = token_head;
-    head = calloc(1, sizeof(node*));
+    head = calloc(1, sizeof(node));
     tail = head;
 
     while(!is_eof()){
