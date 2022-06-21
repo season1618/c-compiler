@@ -1,6 +1,6 @@
-CFLAGS=-std=c11 -g -static
-SRCS=$(wildcard *.c)
-OBJS=$(SRCS:.c=.o)
+CFLAGS = -std=c11 -g -static
+SRCS = main.c tokenize.c parse.c codegen.c
+OBJS = $(SRCS:.c=.o)
 
 main: $(OBJS)
 	$(CC) -o main $(OBJS) $(LDFLAGS)
@@ -8,9 +8,6 @@ main: $(OBJS)
 $(OBJS): dcl.h
 
 test: main
-	./test.sh
-
-clean:
-	rm -f main *.o *~ tmp*
-
-.PHONY: test clean
+	./main test.c > tmp.s
+	$(CC) -o tmp tmp.s foo.c
+	./tmp
