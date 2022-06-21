@@ -121,10 +121,29 @@ token *tokenize(char *code_head){
     cur = head;
 
     while(*p){
+        // skip white space
         if(isspace(*p)){
             p++;
             continue;
         }
+        // skip line comment
+        if(memcmp(p, "//", 2) == 0){
+            p += 2;
+            while(*p != '\n'){
+                p++;
+            }
+            continue;
+        }
+        // skip block comment
+        if(memcmp(p, "/*", 2) == 0){
+            p += 2;
+            while(memcmp(p, "*/", 2)){
+                p++;
+            }
+            p += 2;
+            continue;
+        }
+        
         if(*p == '\"'){
             next_string();
             continue;
