@@ -70,16 +70,18 @@ void next_identifier(){
 }
 
 void next_string(){
-    p++;
     token *nxt = calloc(1, sizeof(token));
     nxt->kind = TK_STRING;
     nxt->str = p;
-    nxt->len = 0;
+    nxt->len = 1;
+    p++;
     while(*p != '\"'){
         p++;
         nxt->len++;
     }
     p++;
+    nxt->len++;
+
     cur->next = nxt;
     cur = nxt;
 }
@@ -165,12 +167,9 @@ token *tokenize(char *code_head){
 
     // cur = head->next;
     // while(cur->kind != TK_EOF){
-    //     for(int i = 0; i < cur->len; i++){
-    //         printf("%c", cur->str[i]);
-    //     }
+    //     fprintf(stderr, "%.*s ", cur->len, cur->str);
     //     cur = cur->next;
-    //     printf(" ");
     // }
-    // printf("\n");
+    // fprintf(stderr, "\n");
     return head->next;
 }

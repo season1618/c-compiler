@@ -128,7 +128,7 @@ void gen_ext(node *nd){
         case ND_LOCAL_CONST:
             printf(".data\n");
             printf(".LC%d:\n", nd->offset);
-            printf("    .string \"%.*s\"\n", nd->len, nd->name);
+            printf("    .string %.*s\n", nd->len, nd->name);
             break;
     }
 }
@@ -278,14 +278,15 @@ void gen_expr(node *nd){
                 printf("    add rsp, 8\n");
             }
 
-            // move arguments to a register or the stack
-            int i = nd->val - 1;
+            // move arguments to the stack
             node *cur = nd->head;
             while(cur){
                 gen_expr(cur);
-                if(i < 6) printf("    pop %s\n", int_arg_reg[i][3]);
                 cur = cur->next;
-                i--;
+            }
+            // move first 6 arguments to registers
+            for(int i = 0; i < (nd->val < 6 ? nd->val : 6); i++){
+                printf("    pop %s\n", int_arg_reg[i][3]);
             }
 
             printf("    mov al, 0\n");

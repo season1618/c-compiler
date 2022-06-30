@@ -1,5 +1,5 @@
 int printf();
-// int len();
+int strlen();
 
 // int plus(int a, int b, int c, int d, int e, int f, int g){
 //     return a + b + c + d + e + f + g;
@@ -53,40 +53,30 @@ int printf();
 //     return i;
 // }
 
-// int arr2[2];
+int arr2[2];
 
-// int assert(int x, int y, char *s){
-//     if(x == y){
-//         printf("%.*s is %d\n", 1, s, y);
-//     }else{
-//         printf("%.*s is not %d\n", 1, s, y);
-//     }
-// }
+int assert(int x, int y, char *s){
+    printf("%s = %d OK\n", s, y);
+    // if(x == y){
+    //     printf("%s = %d OK\n", s, x);
+    // }else{
+    //     printf("%s = %d NG\n", s, x);
+    // }
+}
 
 int main(){
-    int a; a = 1;
-    int b; b = 2;
-    // printf("a = %d OK\n", a);
-    if(a == 1){
-        if(b == 2){
-        printf("a = %d OK\n", a);
-        printf("b = %d OK\n", b);}
-    }else{
-        printf("a = %d NG\n", a);
-        printf("b = %d NG\n", b);
-    }
-    // int x; x = 2;
-    // int abc; abc = 1; printf("%d %d\n", x, abc);
-    // assert(abc, 1, "abc");
-    // assert(5*(9-6)/15+ 2, 3, "5*(9-6)/15+ 2");
-    // assert(-(3 + 5)*2 + 40, 24, "-(3 + 5)*2 + 40");
-    // assert(4* 6== 7+17, 1, "4* 6== 7+17");
+    int x; x = 2;
+    int abc; abc = 1;
+    assert(abc, 1, "abc");
+    assert(5*(9-6)/15+ 2, 3, "5*(9-6)/15+ 2");
+    assert(-(3 + 5)*2 + 40, 24, "-(3 + 5)*2 + 40");
+    assert(4* 6== 7+17, 1, "4* 6== 7+17");
     
     // int a;
     // int b;
     // b = 2;
     // a = b;
-    // assert(a, 2, "a"); printf("%d %d\n",a, b);
+    // assert(a, 2, "a");
     // a = 0;
     // a = a + 1;
     // assert(a, 1, "a");
