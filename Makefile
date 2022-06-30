@@ -7,7 +7,7 @@ main: $(OBJS)
 
 $(OBJS): dcl.h
 
-test: main
-	./main test.c > tmp.s
+test: main test/test.c
+	./main test/test.c > tmp.s
 	$(CC) -o tmp tmp.s foo.c
 	./tmp
