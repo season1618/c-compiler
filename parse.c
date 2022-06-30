@@ -115,18 +115,7 @@ void add_local(type *ty, token *tk){
     var->ty = ty;
     var->name = tk->str;
     var->len = tk->len;
-    
-    switch(ty->kind){
-        case INT:
-            var->offset = local_head->offset + 8;
-            break;
-        case PTR:
-            var->offset = local_head->offset + 8;
-            break;
-        case ARRAY:
-            var->offset = local_head->offset + 8 * ty->arr_size;
-            break;
-    }
+    var->offset = local_head->offset + size_of(ty);
 
     local_head = var;
 }
@@ -361,12 +350,17 @@ node *program(token *token_head){
             nd->val = 0;
 
             token *param;
+            nd->head = calloc(1, sizeof(node));
+            node *arg = nd->head;
             while(!expect(")")){
                 if(cur->kind == TK_TYPE){
                     ty = get_type();
                     param = cur;
                     cur = cur->next;
                     add_local(ty, param);
+
+                    arg->next = node_symbol(param);
+                    arg = arg->next;
                 }else{
                     error(cur, "expected type");
                 }

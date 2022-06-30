@@ -4,6 +4,69 @@
 
 int label_num = 2;
 char *arg_reg_int[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+char *int_arg_reg[6][4] = {
+    {"dil",  "di", "edi", "rdi"},
+    {"sil",  "si", "esi", "rsi"},
+    { "dl",  "dx", "edx", "rdx"},
+    { "cl",  "cx", "ecx", "rcx"},
+    {"r8b", "r8w", "r8d", "r8" },
+    {"r9b", "r9w", "r9d", "r9" }
+};
+
+char *rax[4] = {"al", "ax", "eax", "rax"};
+char *rbx[4] = {"bl", "bx", "ebx", "rbx"};
+char *rdi[4] = {"dil",  "di", "edi", "rdi"};
+
+char *int_arg_register(int ord, int size){
+    switch(size){
+        case 1:
+            return int_arg_reg[ord][0];
+        case 2:
+            return int_arg_reg[ord][1];
+        case 4:
+            return int_arg_reg[ord][2];
+        case 8:
+            return int_arg_reg[ord][3];
+    }
+}
+
+void mov_register_to_memory(char *dest, char *src[4], type *ty){
+    switch(ty->kind){
+        case CHAR:
+            printf("    mov BYTE PTR [%s], %s\n", dest, src[0]);
+            break;
+        case INT:
+            printf("    mov DWORD PTR [%s], %s\n", dest, src[2]);
+            break;
+        case PTR:
+            printf("    mov QWORD PTR [%s], %s\n", dest, src[3]);
+            break;
+    }
+}
+
+void mov_memory_to_register(char *dest[4], char *src, type *ty){
+    switch(ty->kind){
+        case CHAR:
+            printf("    mov %s, BYTE PTR [%s]\n", dest[0], src);
+            break;
+        case INT:
+            printf("    mov %s, DWORD PTR [%s]\n", dest[2], src);
+            break;
+        case PTR:
+            printf("    mov %s, QWORD PTR [%s]\n", dest[3], src);
+            break;
+    }
+}
+char *memory_prefix(type *ty){
+    switch(ty->kind){
+        case CHAR:
+            return "BYTE PTR";
+        case INT:
+            return "DWORD PTR";
+        case PTR:
+            return "QWORD PTR";
+    }
+}
 
 void gen_ext();
 void gen_stmt();
@@ -27,22 +90,26 @@ void gen_ext(node *nd){
             
             printf("    push rbp\n");
             printf("    mov rbp, rsp\n");
-            printf("    sub rsp, %d\n", nd->offset); // region of local variables
+            printf("    sub rsp, %d\n", (nd->offset + 15)/16 * 16); // region of local variables
 
             // move arguments from registers or the stack on the rbp to the stack under rbp.
-            for(int i = 0; i < nd->val; i++){
-                if(i < 6){
+            int num_param_int = 0;
+            for(node *param = nd->head->next; param; param = param->next){
+                if(num_param_int < 6){
                     printf("    mov rax, rbp\n");
-                    printf("    sub rax, %d\n", 8 * (i + 1));
-                    printf("    mov [rax], %s\n", arg_reg_int[i]);
+                    printf("    sub rax, %d\n", param->offset);
+                    mov_register_to_memory("rax", int_arg_reg[num_param_int], param->ty);
+                    // printf("    mov %s [rax], %s\n", memory_prefix(param->ty), arg_reg_int[num_param_int]);
                 }else{
                     printf("    mov rax, rbp\n");
-                    printf("    sub rax, %d\n", 8 * (i + 1));
+                    printf("    sub rax, %d\n", param->offset);
                     printf("    mov rbx, rbp\n");
-                    printf("    add rbx, %d\n", 8 * (i - 4));
+                    printf("    add rbx, %d\n", 8 * (num_param_int - 4));
                     printf("    mov rbx, [rbx]\n");
-                    printf("    mov [rax], rbx\n");
+                    mov_register_to_memory("rax", rbx, param->ty);
+                    // printf("    mov %s [rax], rbx\n", memory_prefix(param->ty));
                 }
+                num_param_int++;
             }
 
             gen_stmt(nd->op1);
@@ -179,7 +246,8 @@ void gen_expr(node *nd){
 
             printf("    pop rdi\n");
             printf("    pop rax\n");
-            printf("    mov [rax], rdi\n");
+            // printf("    mov %s [rax], rdi\n", memory_prefix(nd->op1->ty));
+            mov_register_to_memory("rax", rdi, nd->op1->ty);
             printf("    push rdi\n");
             return;
         case ND_ADR:
@@ -188,7 +256,8 @@ void gen_expr(node *nd){
         case ND_DEREF:
             gen_expr(nd->op1);
             printf("    pop rax\n");
-            printf("    mov rax, [rax]\n");
+            // printf("    mov rax, %s [rax]\n", memory_prefix(nd->op1->ty));
+            mov_memory_to_register(rax, "rax", nd->op1->ty);
             printf("    push rax\n");
             return;
         
@@ -214,7 +283,7 @@ void gen_expr(node *nd){
             node *cur = nd->head;
             while(cur){
                 gen_expr(cur);
-                if(i < 6) printf("    pop %s\n", arg_reg_int[i]);
+                if(i < 6) printf("    pop %s\n", int_arg_reg[i][3]);
                 cur = cur->next;
                 i--;
             }
@@ -235,6 +304,8 @@ void gen_expr(node *nd){
                     printf("    movzb eax, BYTE PTR [rax]\n");
                     break;
                 case INT:
+                    printf("    mov eax, DWORD PTR [rax]\n");
+                    break;
                 case PTR:
                     printf("    mov rax, [rax]\n");
                     break;
@@ -250,6 +321,8 @@ void gen_expr(node *nd){
                     printf("    movzb eax, BYTE PTR [rax]\n");
                     break;
                 case INT:
+                    printf("    mov eax, DWORD PTR [rax]\n");
+                    break;
                 case PTR:
                     printf("    mov rax, [rax]\n");
                     break;
