@@ -47,10 +47,10 @@ void mov_register_to_memory(char *dest, char *src[4], type *ty){
 void mov_memory_to_register(char *dest[4], char *src, type *ty){
     switch(ty->kind){
         case CHAR:
-            printf("    mov %s, BYTE PTR [%s]\n", dest[0], src);
+            printf("    movsx %s, BYTE PTR [%s]\n", dest[3], src);
             break;
         case INT:
-            printf("    mov %s, DWORD PTR [%s]\n", dest[2], src);
+            printf("    movsx %s, DWORD PTR [%s]\n", dest[3], src);
             break;
         case PTR:
             printf("    mov %s, QWORD PTR [%s]\n", dest[3], src);
@@ -294,13 +294,13 @@ void gen_expr(node *nd){
             printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
             switch(nd->ty->kind){
                 case CHAR:
-                    printf("    movzb eax, BYTE PTR [rax]\n");
+                    printf("    movsx rax, BYTE PTR [rax]\n");
                     break;
                 case INT:
-                    printf("    mov eax, DWORD PTR [rax]\n");
+                    printf("    movsx rax, DWORD PTR [rax]\n");
                     break;
                 case PTR:
-                    printf("    mov rax, [rax]\n");
+                    printf("    mov rax, QWORD [rax]\n");
                     break;
             }
             printf("    push rax\n");
@@ -311,13 +311,13 @@ void gen_expr(node *nd){
             printf("    sub rax, %d\n", nd->offset);
             switch(nd->ty->kind){
                 case CHAR:
-                    printf("    movzb eax, BYTE PTR [rax]\n");
+                    printf("    movsx rax, BYTE PTR [rax]\n");
                     break;
                 case INT:
-                    printf("    mov eax, DWORD PTR [rax]\n");
+                    printf("    movsx rax, DWORD PTR [rax]\n");
                     break;
                 case PTR:
-                    printf("    mov rax, [rax]\n");
+                    printf("    mov rax, QWORD PTR [rax]\n");
                     break;
             }
             printf("    push rax\n");
