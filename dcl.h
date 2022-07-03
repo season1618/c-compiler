@@ -35,6 +35,7 @@ typedef enum {
     ND_LEQ,
 
     // unary operator
+    ND_NEG,
     ND_ADR,
     ND_DEREF,
 

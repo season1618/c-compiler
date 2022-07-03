@@ -210,6 +210,12 @@ node *node_unary(node_kind kind, node *op){
     nd->op1 = op;
 
     switch(kind){
+        case ND_NEG:
+            if(op->ty->kind == CHAR || op->ty->kind == INT){
+                nd->ty = op->ty;
+                break;
+            }
+            error(cur, "invalid type argument of unary '-'");
         case ND_ADR:
             nd->ty = type_ptr(op->ty);
             break;
@@ -286,11 +292,13 @@ node *node_symbol(token *id){
     error(id, "'%.*s' is undeclared", id->len, id->str);
 }
 
-node *node_num(int val){
+node *node_num(){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_NUM;
     nd->ty = type_base(INT);
-    nd->val = val;
+    nd->val = cur->val;
+
+    cur = cur->next;
     return nd;
 }
 
@@ -572,7 +580,7 @@ node *unary(){
         return unary();
     }
     if(expect("-")){
-        return node_binary(ND_SUB, node_num(0), unary());
+        return node_unary(ND_NEG, unary());
     }
     if(expect("&")){
         return node_unary(ND_ADR, unary());
@@ -611,7 +619,7 @@ node *primary(){
         }
     }
     if(cur->kind == TK_NUM){
-        return node_num(get_number());
+        return node_num();
     }
     if(cur->kind == TK_STRING){
         node *nd = calloc(1, sizeof(node));

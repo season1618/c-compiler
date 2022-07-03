@@ -237,6 +237,12 @@ void gen_expr(node *nd){
             mov_register_to_memory("rax", rdi, nd->op1->ty);
             printf("    push rdi\n");
             return;
+        case ND_NEG:
+            gen_expr(nd->op1);
+            printf("    pop rax\n");
+            printf("    neg rax\n");
+            printf("    push rax\n");
+            return;
         case ND_ADR:
             gen_lval(nd->op1);
             return;
