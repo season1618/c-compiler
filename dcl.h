@@ -48,10 +48,11 @@ typedef enum {
 } node_kind;
 
 typedef enum {
-    PTR,
-    ARRAY,
+    VOID,
     INT,
     CHAR,
+    PTR,
+    ARRAY,
 } type_kind;
 
 typedef struct token token;

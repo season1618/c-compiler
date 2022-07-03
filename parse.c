@@ -70,7 +70,9 @@ type *get_type(){
         error(cur, "expected type");
     }
     type *ty = calloc(1, sizeof(type));
-    if(expect("char")){
+    if(expect("void")){
+        ty->kind = VOID;
+    }else if(expect("char")){
         ty->kind = CHAR;
     }else if(expect("int")){
         ty->kind = INT;
@@ -109,12 +111,12 @@ void add_global(type *ty, token *id){
     global_head = var;
 }
 
-void add_local(type *ty, token *tk){
+void add_local(type *ty, token *id){
     symb *var = calloc(1, sizeof(symb));
     var->next = local_head;
     var->ty = ty;
-    var->name = tk->str;
-    var->len = tk->len;
+    var->name = id->str;
+    var->len = id->len;
     var->offset = local_head->offset + size_of(ty);
 
     local_head = var;
@@ -326,6 +328,9 @@ node *program(token *token_head){
 
         // gloval variable
         if(expect(";")){
+            if(ty->kind == VOID){
+                error(cur, "a variable declared void");
+            }
             add_global(ty, id);
             add_ext(node_global_def(ty, id));
             continue;
@@ -333,6 +338,9 @@ node *program(token *token_head){
 
         // array
         if(expect("[")){
+            if(ty->kind == VOID){
+                error(cur, "a variable declared array of voids");
+            }
             int size = get_number();
             if(!expect("]")){
                 error(cur, "expect ']'");
@@ -407,12 +415,18 @@ void dcl(){
 
     // local variable
     if(expect(";")){
+        if(ty->kind == VOID){
+            error(cur, "a variable declared void");
+        }
         add_local(ty, id);
         return;
     }
 
     // array
     if(expect("[")){
+        if(ty->kind == VOID){
+            error(cur, "a variable declared array of voids");
+        }
         int size = get_number();
         if(!expect("]")){
             error(cur, "expect ']'");
