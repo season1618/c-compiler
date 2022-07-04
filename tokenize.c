@@ -10,10 +10,10 @@
 char *p;
 token *cur;
 
-int NUM_KEYWORD = 6;
+int NUM_KEYWORD = 9;
 int NUM_TYPE = 3;
 int NUM_PUNCT = 23;
-char *keywords[] = {"return", "if", "else", "while", "for", "sizeof"};
+char *keywords[] = {"return", "if", "else", "switch", "while", "for", "continue", "break", "sizeof"};
 char *types[] = {"void", "char", "int"};
 char *puncts[] = {"==", "!=", "<=", ">=", "=", "+", "-", "*", "/", "%", "&", ":", ";", ",", ".", "<", ">", "(", ")", "{", "}", "[", "]"};
 

@@ -497,6 +497,14 @@ node *stmt(){
 
         nd->op4 = stmt();
     }
+    else if(expect("continue")){
+        nd->kind = ND_CONTINUE;
+        if(!expect(";")) error(cur, "expected ';'");
+    }
+    else if(expect("break")){
+        nd->kind = ND_BREAK;
+        if(!expect(";")) error(cur, "expected ';'");
+    }
     else if(expect("return")){
         nd->kind = ND_RET;
         nd->op1 = expr();

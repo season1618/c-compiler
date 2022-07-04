@@ -1,8 +1,25 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "dcl.h"
 
 int label_num = 2;
+block *block_top;
+
+void push_block(node_kind kind, int begin, int end){
+    block *stmt = calloc(1, sizeof(block));
+    stmt->kind = kind;
+    stmt->next = block_top;
+    stmt->begin = begin;
+    stmt->end = end;
+    
+    block_top = stmt;
+}
+
+void pop_block(){
+    block_top = block_top->next;
+}
+
 char *arg_reg_int[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 char *int_arg_reg[6][4] = {
     {"dil",  "di", "edi", "rdi"},
@@ -124,6 +141,13 @@ void gen_ext(node *nd){
 void gen_stmt(node *nd){
     switch(nd->kind){
         int l1, l2;
+        case ND_BLOCK:
+            for(node *cur = nd->head->next; cur; cur = cur->next){
+                gen_stmt(cur);
+                printf("    pop rax\n");
+            }
+            printf("    push rax\n");
+            return;
         case ND_IF:
             gen_expr(nd->op1);
             
@@ -150,14 +174,17 @@ void gen_stmt(node *nd){
 
                 printf("    je .L%d\n", l1);
                 gen_stmt(nd->op2);
+                printf("    pop rax\n");
 
                 printf(".L%d:\n", l1);
+                printf("    push rax\n");
             }
             return;
         case ND_WHILE:
             l1 = label_num;
             l2 = label_num + 1;
             label_num += 2;
+            push_block(ND_WHILE, l1, l2);
 
             printf(".L%d:\n", l1);
 
@@ -169,11 +196,14 @@ void gen_stmt(node *nd){
             printf("    jmp .L%d\n", l1);
             
             printf(".L%d:\n", l2);
+
+            pop_block();
             return;
         case ND_FOR:
             l1 = label_num;
             l2 = label_num + 1;
             label_num += 2;
+            push_block(ND_FOR, l1, l2);
 
             gen_expr(nd->op1);
 
@@ -188,12 +218,28 @@ void gen_stmt(node *nd){
             printf("    jmp .L%d\n", l1);
 
             printf(".L%d:\n", l2);
+
+            pop_block();
             return;
-        case ND_BLOCK:
-            for(node *cur = nd->head->next; cur; cur = cur->next){
-                gen_stmt(cur);
-                printf("    pop rax\n");
+        case ND_CONTINUE:
+            for(block *blk = block_top; blk; blk = blk->next){
+                if(blk->kind == ND_WHILE || blk->kind == ND_FOR){
+                    printf("    push rax\n");
+                    printf("    jmp .L%d\n", blk->begin);
+                    return;
+                }
             }
+            // error(cur, "continue statement not within a loop");
+            fprintf(stderr, "continue statement not within a loop");
+            return;
+        case ND_BREAK:
+            if(block_top){
+                printf("    push rax\n");
+                printf("    jmp .L%d\n", block_top->end);
+                return;
+            }
+            // error(cur, "break statement not within loop or switch");
+            fprintf(stderr, "continue statement not within a loop or switch");
             return;
         case ND_RET:
             gen_expr(nd->op1);

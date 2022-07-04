@@ -15,10 +15,13 @@ typedef enum {
     ND_LOCAL_CONST,
 
     // statement
+    ND_BLOCK,
     ND_IF,
+    ND_SWITCH,
     ND_WHILE,
     ND_FOR,
-    ND_BLOCK,
+    ND_CONTINUE,
+    ND_BREAK,
     ND_RET,
 
     // assignment
@@ -59,6 +62,7 @@ typedef struct token token;
 typedef struct type type;
 typedef struct symb symb;
 typedef struct node node;
+typedef struct block block;
 
 struct token {
     token_kind kind;
@@ -92,6 +96,13 @@ struct node {
     int len;
     int offset;
     int val;
+};
+
+struct block {
+    node_kind kind;
+    block *next;
+    int begin;
+    int end;
 };
 
 extern void error();
