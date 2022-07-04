@@ -31,19 +31,6 @@ bool expect(char *op){
     }
 }
 
-int size_of(type *ty){
-    switch(ty->kind){
-        case CHAR:
-            return 1;
-        case INT:
-            return 4;
-        case PTR:
-            return 8;
-        case ARRAY:
-            return size_of(ty->ptr_to) * ty->arr_size;
-    }
-}
-
 type *type_base(type_kind kind){
     type *ty = calloc(1, sizeof(type));
     ty->kind = kind;
@@ -83,6 +70,46 @@ type *get_type(){
     return ty;
 }
 
+bool match_type(type *t1, type *t2){
+    if(t1->kind != t2->kind){
+        return false;
+    }
+    switch(t1->kind){
+        case PTR:
+        case ARRAY:
+            return match_type(t1->ptr_to, t2->ptr_to);
+        case CHAR:
+        case INT:
+            return true;
+    }
+}
+
+int size_of(type *ty){
+    switch(ty->kind){
+        case CHAR:
+            return 1;
+        case INT:
+            return 4;
+        case PTR:
+            return 8;
+        case ARRAY:
+            return size_of(ty->ptr_to) * ty->arr_size;
+    }
+}
+
+int align_of(type *ty){
+    switch(ty->kind){
+        case CHAR:
+            return 1;
+        case INT:
+            return 4;
+        case PTR:
+            return 8;
+        case ARRAY:
+            return size_of(ty->ptr_to);
+    }
+}
+
 int get_number(){
     if(cur->kind != TK_NUM){
         error(cur, "expected number");
@@ -96,12 +123,12 @@ bool is_eof(){
     return cur->kind == TK_EOF;
 }
 
-void add_ext(node *nd){
+void push_ext(node *nd){
     tail->next = nd;
     tail = nd;
 }
 
-void add_global(type *ty, token *id){
+void push_global(type *ty, token *id){
     symb *var = calloc(1, sizeof(symb));
     var->next = global_head;
     var->ty = ty;
@@ -111,29 +138,16 @@ void add_global(type *ty, token *id){
     global_head = var;
 }
 
-void add_local(type *ty, token *id){
+void push_local(type *ty, token *id){
     symb *var = calloc(1, sizeof(symb));
     var->next = local_head;
     var->ty = ty;
     var->name = id->str;
     var->len = id->len;
     var->offset = local_head->offset + size_of(ty);
+    var->offset = (var->offset + align_of(ty) - 1) / align_of(ty) * align_of(ty);
 
     local_head = var;
-}
-
-bool match_type(type *t1, type *t2){
-    if(t1->kind != t2->kind){
-        return false;
-    }
-    switch(t1->kind){
-        case PTR:
-        case ARRAY:
-            return match_type(t1->ptr_to, t2->ptr_to);
-        case CHAR:
-        case INT:
-            return true;
-    }
 }
 
 node *node_global_def(type *ty, token *id){
@@ -331,8 +345,8 @@ node *program(token *token_head){
             if(ty->kind == VOID){
                 error(cur, "a variable declared void");
             }
-            add_global(ty, id);
-            add_ext(node_global_def(ty, id));
+            push_global(ty, id);
+            push_ext(node_global_def(ty, id));
             continue;
         }
 
@@ -349,8 +363,8 @@ node *program(token *token_head){
                 error(cur, "expected ';'");
             }
             ty = type_array(ty, size);
-            add_global(ty, id);
-            add_ext(node_global_def(ty, id));
+            push_global(ty, id);
+            push_ext(node_global_def(ty, id));
             continue;
         }
 
@@ -373,7 +387,7 @@ node *program(token *token_head){
                     ty = get_type();
                     param = cur;
                     cur = cur->next;
-                    add_local(ty, param);
+                    push_local(ty, param);
 
                     arg->next = node_symbol(param);
                     arg = arg->next;
@@ -393,12 +407,12 @@ node *program(token *token_head){
             }
 
             if(expect(";")){
-                add_global(ty, id);
+                push_global(ty, id);
             }else if(cur->str[0] == '{'){
-                add_global(ty, id);
+                push_global(ty, id);
                 nd->op1 = stmt();
                 nd->offset = local_head->offset;
-                add_ext(nd);
+                push_ext(nd);
             }else{
                 error(cur, "expected ';'");
             }
@@ -418,7 +432,7 @@ void dcl(){
         if(ty->kind == VOID){
             error(cur, "a variable declared void");
         }
-        add_local(ty, id);
+        push_local(ty, id);
         return;
     }
 
@@ -435,7 +449,7 @@ void dcl(){
             error(cur, "expected ';'");
         }
         ty = type_array(ty, size);
-        add_local(ty, id);
+        push_local(ty, id);
     }
 }
 
@@ -649,7 +663,7 @@ node *primary(){
         nd->name = cur->str;
         nd->len = cur->len;
         nd->offset = lc_num;
-        add_ext(nd);
+        push_ext(nd);
         return node_string();
     }
     error(cur, "unexpected token");
