@@ -238,36 +238,31 @@ node *node_sizeof(node *op){
     return nd;
 }
 
-node *node_func_call(token *id){
+node *node_func_call(node *var){
     node *nd = calloc(1, sizeof(node));
-    for(symb *var = global_head; var; var = var->next){
-        if(var->len == id->len && memcmp(var->name, id->str, var->len) == 0){
-            nd->kind = ND_FUNC_CALL;
-            nd->ty = var->ty->ptr_to;
-            nd->name = var->name;
-            nd->len = var->len;
-            nd->val = 0;
+    nd->kind = ND_FUNC_CALL;
+    nd->ty = var->ty->ptr_to;
+    nd->name = var->name;
+    nd->len = var->len;
+    nd->val = 0;
 
-            node *arg;
-            while(!expect(")")){
-                arg = expr();
-                arg->next = nd->head;
-                nd->head = arg;
-                nd->val++;
-                if(expect(",")){
-                    continue;
-                }else{
-                    if(expect(")")){
-                        break;
-                    }else{
-                        error(cur, "expected ',' or ')'");
-                    }
-                }
+    node *arg;
+    while(!expect(")")){
+        arg = expr();
+        arg->next = nd->head;
+        nd->head = arg;
+        nd->val++;
+        if(expect(",")){
+            continue;
+        }else{
+            if(expect(")")){
+                break;
+            }else{
+                error(cur, "expected ',' or ')'");
             }
-            return nd;
         }
     }
-    error(id, "'%.*s' is undeclared", id->len, id->str);
+    return nd;
 }
 
 node *node_symbol(token *id){
@@ -355,11 +350,9 @@ node *program(token *token_head){
 
 void dcl_local(){
     symb *var = type_ident();
-    if(var){
-        push_local(var);
-        if(!expect(";")){
-            error(cur, "expected ';'");
-        }
+    push_local(var);
+    if(!expect(";")){
+        error(cur, "expected ';'");
     }
 }
 
@@ -632,35 +625,43 @@ node *primary(){
         expect(")");
         return nd;
     }
-    if(cur->kind == TK_ID){
-        token *id = cur;
-        cur = cur->next;
 
-        if(expect("[")){
-            node *nd = node_symbol(id);
-            node *size = expr();
-            if(!expect("]")){
-                error(cur, "expect ']'");
-            }
-            return node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
-        }
-        if(expect("(")){
-            return node_func_call(id);
-        }else{
-            return node_symbol(id);
-        }
+    node *nd;
+    if(cur->kind == TK_ID){
+        nd = node_symbol(cur);
+        cur = cur->next;
     }
-    if(cur->kind == TK_NUM){
-        return node_num();
+    else if(cur->kind == TK_NUM){
+        nd =  node_num();
     }
-    if(cur->kind == TK_STRING){
-        node *nd = calloc(1, sizeof(node));
+    else if(cur->kind == TK_STRING){
+        nd = calloc(1, sizeof(node));
         nd->kind = ND_LOCAL_CONST;
         nd->name = cur->str;
         nd->len = cur->len;
         nd->offset = lc_num;
         push_ext(nd);
-        return node_string();
+        nd = node_string();
     }
-    error(cur, "unexpected token");
+    else{
+        error(cur, "unexpected token");
+    }
+
+    // postfix operation
+    while(true){
+        if(expect("[")){
+            node *size = assign();
+            nd = node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
+            if(!expect("]")){
+                error(cur, "expect ']'");
+            }
+            continue;
+        }
+        if(expect("(")){
+            nd = node_func_call(nd);
+            continue;
+        }
+        break;
+    }
+    return nd;
 }
