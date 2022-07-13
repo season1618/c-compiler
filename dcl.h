@@ -9,6 +9,23 @@ typedef enum {
 } token_kind;
 
 typedef enum {
+    NOTYPE,
+    VOID,
+    CHAR,
+    INT,
+    PTR,
+    ARRAY,
+    FUNC,
+} type_kind;
+
+typedef enum {
+    VAR,
+    TYPE,
+    STRUCT,
+    ENUM,
+} symb_kind;
+
+typedef enum {
     // definition
     ND_FUNC_DEF,
     ND_GLOBAL_DEF,
@@ -50,16 +67,6 @@ typedef enum {
     ND_STRING,
 } node_kind;
 
-typedef enum {
-    NOTYPE,
-    VOID,
-    CHAR,
-    INT,
-    PTR,
-    ARRAY,
-    FUNC,
-} type_kind;
-
 typedef struct token token;
 typedef struct type type;
 typedef struct symb symb;
@@ -82,6 +89,7 @@ struct type {
 };
 
 struct symb {
+    symb_kind kind;
     symb *next;
     type *ty;
     char *name;
