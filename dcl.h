@@ -78,7 +78,7 @@ struct type {
     type_kind kind;
     type *ptr_to;
     node *param;
-    size_t arr_size;
+    size_t size;
 };
 
 struct symb {

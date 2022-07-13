@@ -12,7 +12,7 @@ symb *local_head;
 int lc_num = 0;
 
 void dcl_local();
-node *get_symbol();
+node *type_ident();
 node *stmt();
 node *expr();
 node *assign();
@@ -49,21 +49,8 @@ type *type_array(type *base, size_t size){
     type *ty = calloc(1, sizeof(type));
     ty->kind = ARRAY;
     ty->ptr_to = base;
-    ty->arr_size = size;
+    ty->size = size;
     return ty;
-}
-
-type *get_type(){
-    if(expect("void")){
-        return type_base(VOID);
-    }
-    if(expect("char")){
-        return type_base(CHAR);
-    }
-    if(expect("int")){
-        return type_base(INT);
-    }
-    return type_base(NOTYPE);
 }
 
 bool match_type(type *t1, type *t2){
@@ -91,7 +78,7 @@ int size_of(type *ty){
         case PTR:
             return 8;
         case ARRAY:
-            return size_of(ty->ptr_to) * ty->arr_size;
+            return size_of(ty->ptr_to) * ty->size;
     }
 }
 
@@ -334,7 +321,7 @@ node *program(token *token_head){
     tail = head;
 
     while(!is_eof()){
-        node *nd = get_symbol();
+        node *nd = type_ident();
         push_global(nd);
 
         if(nd->ty->kind == FUNC){
@@ -363,7 +350,7 @@ node *program(token *token_head){
 }
 
 void dcl_local(){
-    node *nd = get_symbol();
+    node *nd = type_ident();
     if(nd){
         push_local(nd);
         if(!expect(";")){
@@ -372,17 +359,30 @@ void dcl_local(){
     }
 }
 
-node *get_symbol(){
+type *base_type(){
+    if(expect("void")){
+        return type_base(VOID);
+    }
+    if(expect("char")){
+        return type_base(CHAR);
+    }
+    if(expect("int")){
+        return type_base(INT);
+    }
+    return type_base(NOTYPE);
+}
+
+node *type_ident(){
     type *base = calloc(1, sizeof(type));
     node *nested = calloc(1, sizeof(node));
 
-    base = get_type();
+    base = base_type();
     while(expect("*")){
         base = type_ptr(base);
     }
 
     if(expect("(")){
-        nested = get_symbol();
+        nested = type_ident();
         if(!expect(")")){
             error(cur, "expect ')'");
         }
@@ -413,7 +413,7 @@ node *get_symbol(){
             node *param = ty->param;
             while(true){
                 if(cur->kind == TK_TYPE){
-                    param->next = get_symbol();
+                    param->next = type_ident();
                     param = param->next;
                 }
                 if(expect(",")) continue;
@@ -432,7 +432,7 @@ node *get_symbol(){
                 ty->kind = base->kind;
                 ty->ptr_to = base->ptr_to;
                 ty->param = base->param;
-                ty->arr_size = base->arr_size;
+                ty->size = base->size;
                 return nested;
             case VOID:
             case CHAR:
