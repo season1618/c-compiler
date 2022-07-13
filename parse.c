@@ -80,15 +80,12 @@ bool find_type(){
     return false;
 }
 
-bool is_valid_type(type *ty){
+void validate_type(type *ty){
     if(ty->kind == VOID){
         error(cur, "variable or field declared void");
     }
     type *nested = ty;
     while(nested){
-        if(nested->kind == NOTYPE){
-            return false;
-        }
         if(nested->ptr_to){
             if(nested->kind == ARRAY && nested->ptr_to->kind == VOID){
                 error(cur, "declaration as array of voids");
@@ -99,7 +96,6 @@ bool is_valid_type(type *ty){
         }
         nested = nested->ptr_to;
     }
-    return true;
 }
 
 int size_of(type *ty){
@@ -290,12 +286,10 @@ node *node_func_call(node *var){
         nd->val++;
         if(expect(",")){
             continue;
+        }else if(expect(")")){
+            break;
         }else{
-            if(expect(")")){
-                break;
-            }else{
-                error(cur, "expected ',' or ')'");
-            }
+            error(cur, "expected ',' or ')'");
         }
     }
     return nd;
@@ -458,18 +452,7 @@ symb *type_ident(){
             ty->param = calloc(1, sizeof(symb));
             symb *param = ty->param;
 
-            // if(!expect(")")){
-            //     param->next = type_ident();
-            //     param = param->next;
-            //     while(expect(",")){
-            //         param->next = type_ident();
-            //         param = param->next;
-            //     }
-            // }
-            while(true){
-                if(expect(")")){
-                    break;
-                }
+            while(!expect(")")){
                 param->next = type_ident();
                 param = param->next;
                 if(expect(",")) continue;
