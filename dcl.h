@@ -77,7 +77,7 @@ struct token {
 struct type {
     type_kind kind;
     type *ptr_to;
-    node *param;
+    symb *param;
     size_t size;
 };
 

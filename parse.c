@@ -123,19 +123,19 @@ void push_global(symb *sy){
     global_head = var;
 }
 
-void push_local(node *nd){
+void push_local(symb *sy){
     symb *var = calloc(1, sizeof(symb));
     var->next = local_head;
-    var->ty = nd->ty;
-    var->name = nd->name;
-    var->len = nd->len;
-    var->offset = local_head->offset + size_of(nd->ty);
-    var->offset = (var->offset + align_of(nd->ty) - 1) / align_of(nd->ty) * align_of(nd->ty);
+    var->ty = sy->ty;
+    var->name = sy->name;
+    var->len = sy->len;
+    var->offset = local_head->offset + size_of(sy->ty);
+    var->offset = (var->offset + align_of(sy->ty) - 1) / align_of(sy->ty) * align_of(sy->ty);
 
     local_head = var;
 }
 
-node *node_global_def(node *var){
+node *node_global_def(symb *var){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_GLOBAL_DEF;
     nd->ty = var->ty;
@@ -325,15 +325,15 @@ node *program(token *token_head){
         push_global(var);
 
         if(var->ty->kind == FUNC){
-            node *nd = calloc(1, sizeof(node));
             local_head = calloc(1, sizeof(symb));
+            node *nd = calloc(1, sizeof(node));
             nd->kind = ND_FUNC_DEF;
             nd->ty = var->ty;
             nd->name = var->name;
             nd->len = var->len;
 
             if(cur->str[0] == '{'){
-                for(node *param = var->ty->param->next; param; param = param->next){
+                for(symb *param = var->ty->param->next; param; param = param->next){
                     push_local(param);
                     param->offset = local_head->offset;
                 }
@@ -343,11 +343,7 @@ node *program(token *token_head){
                 continue;
             }
         }else{
-            node *nd = calloc(1, sizeof(node));
-            nd->ty = var->ty;
-            nd->name = var->name;
-            nd->len = var->len;
-            push_ext(node_global_def(nd));
+            push_ext(node_global_def(var));
         }
 
         if(!expect(";")){
@@ -359,12 +355,8 @@ node *program(token *token_head){
 
 void dcl_local(){
     symb *var = type_ident();
-    node *nd = calloc(1, sizeof(node));
-    nd->ty = var->ty;
-    nd->name = var->name;
-    nd->len = var->len;
-    if(nd){
-        push_local(nd);
+    if(var){
+        push_local(var);
         if(!expect(";")){
             error(cur, "expected ';'");
         }
@@ -418,17 +410,11 @@ symb *type_ident(){
             type *ty = calloc(1, sizeof(type));
             ty->kind = FUNC;
             ty->ptr_to = base;
-            ty->param = calloc(1, sizeof(node));
-            node *param = ty->param;
+            ty->param = calloc(1, sizeof(symb));
+            symb *param = ty->param;
             while(true){
                 if(cur->kind == TK_TYPE){
-                    // param->next = type_ident();
-                    symb *var = type_ident();
-                    node *nd = calloc(1, sizeof(node));
-                    nd->ty = var->ty;
-                    nd->name = var->name;
-                    nd->len = var->len;
-                    param->next = nd;
+                    param->next = type_ident();
                     param = param->next;
                 }
                 if(expect(",")) continue;
