@@ -51,11 +51,13 @@ typedef enum {
 } node_kind;
 
 typedef enum {
+    NOTYPE,
     VOID,
-    INT,
     CHAR,
+    INT,
     PTR,
     ARRAY,
+    FUNC,
 } type_kind;
 
 typedef struct token token;
@@ -69,12 +71,13 @@ struct token {
     token *next;
     char *str;
     int len;
-    int val; // TK_NUM
+    int val;
 };
 
 struct type {
     type_kind kind;
     type *ptr_to;
+    node *param;
     size_t arr_size;
 };
 

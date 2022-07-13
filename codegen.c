@@ -101,7 +101,7 @@ void gen_ext(node *nd){
 
             // move arguments from registers or the stack on the rbp to the stack under rbp.
             int num_param_int = 0;
-            for(node *param = nd->head->next; param; param = param->next){
+            for(node *param = nd->ty->param->next; param; param = param->next){
                 if(num_param_int < 6){
                     printf("    mov rax, rbp\n");
                     printf("    sub rax, %d\n", param->offset);

@@ -11,7 +11,8 @@ symb *global_head;
 symb *local_head;
 int lc_num = 0;
 
-void dcl();
+void dcl_local();
+node *get_symbol();
 node *stmt();
 node *expr();
 node *assign();
@@ -53,21 +54,16 @@ type *type_array(type *base, size_t size){
 }
 
 type *get_type(){
-    if(cur->kind != TK_TYPE){
-        error(cur, "expected type");
-    }
-    type *ty = calloc(1, sizeof(type));
     if(expect("void")){
-        ty->kind = VOID;
-    }else if(expect("char")){
-        ty->kind = CHAR;
-    }else if(expect("int")){
-        ty->kind = INT;
+        return type_base(VOID);
     }
-    while(expect("*")){
-        ty = type_ptr(ty);
+    if(expect("char")){
+        return type_base(CHAR);
     }
-    return ty;
+    if(expect("int")){
+        return type_base(INT);
+    }
+    return type_base(NOTYPE);
 }
 
 bool match_type(type *t1, type *t2){
@@ -86,7 +82,9 @@ bool match_type(type *t1, type *t2){
 
 int size_of(type *ty){
     switch(ty->kind){
+        case VOID:
         case CHAR:
+        case FUNC:
             return 1;
         case INT:
             return 4;
@@ -128,35 +126,35 @@ void push_ext(node *nd){
     tail = nd;
 }
 
-void push_global(type *ty, token *id){
+void push_global(node *nd){
     symb *var = calloc(1, sizeof(symb));
     var->next = global_head;
-    var->ty = ty;
-    var->name = id->str;
-    var->len = id->len;
+    var->ty = nd->ty;
+    var->name = nd->name;
+    var->len = nd->len;
 
     global_head = var;
 }
 
-void push_local(type *ty, token *id){
+void push_local(node *nd){
     symb *var = calloc(1, sizeof(symb));
     var->next = local_head;
-    var->ty = ty;
-    var->name = id->str;
-    var->len = id->len;
-    var->offset = local_head->offset + size_of(ty);
-    var->offset = (var->offset + align_of(ty) - 1) / align_of(ty) * align_of(ty);
+    var->ty = nd->ty;
+    var->name = nd->name;
+    var->len = nd->len;
+    var->offset = local_head->offset + size_of(nd->ty);
+    var->offset = (var->offset + align_of(nd->ty) - 1) / align_of(nd->ty) * align_of(nd->ty);
 
     local_head = var;
 }
 
-node *node_global_def(type *ty, token *id){
+node *node_global_def(node *var){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_GLOBAL_DEF;
-    nd->ty = ty;
-    nd->name = id->str;
-    nd->len = id->len;
-    nd->offset = size_of(ty);
+    nd->ty = var->ty;
+    nd->name = var->name;
+    nd->len = var->len;
+    nd->offset = size_of(var->ty);
     return nd;
 }
 
@@ -258,7 +256,7 @@ node *node_func_call(token *id){
     for(symb *var = global_head; var; var = var->next){
         if(var->len == id->len && memcmp(var->name, id->str, var->len) == 0){
             nd->kind = ND_FUNC_CALL;
-            nd->ty = var->ty;
+            nd->ty = var->ty->ptr_to;
             nd->name = var->name;
             nd->len = var->len;
             nd->val = 0;
@@ -336,120 +334,117 @@ node *program(token *token_head){
     tail = head;
 
     while(!is_eof()){
-        type *ty = get_type();
-        token *id = cur;
-        cur = cur->next;
+        node *nd = get_symbol();
+        push_global(nd);
 
-        // gloval variable
-        if(expect(";")){
-            if(ty->kind == VOID){
-                error(cur, "a variable declared void");
-            }
-            push_global(ty, id);
-            push_ext(node_global_def(ty, id));
-            continue;
-        }
-
-        // array
-        if(expect("[")){
-            if(ty->kind == VOID){
-                error(cur, "a variable declared array of voids");
-            }
-            int size = get_number();
-            if(!expect("]")){
-                error(cur, "expect ']'");
-            }
-            if(!expect(";")){
-                error(cur, "expected ';'");
-            }
-            ty = type_array(ty, size);
-            push_global(ty, id);
-            push_ext(node_global_def(ty, id));
-            continue;
-        }
-
-        // function
-        if(expect("(")){
-            node *nd = calloc(1, sizeof(node));
+        if(nd->ty->kind == FUNC){
             local_head = calloc(1, sizeof(symb));
-
             nd->kind = ND_FUNC_DEF;
-            nd->ty = ty;
-            nd->name = id->str;
-            nd->len = id->len;
-            nd->val = 0;
 
-            token *param;
-            nd->head = calloc(1, sizeof(node));
-            node *arg = nd->head;
-            while(!expect(")")){
-                if(cur->kind == TK_TYPE){
-                    ty = get_type();
-                    param = cur;
-                    cur = cur->next;
-                    push_local(ty, param);
-
-                    arg->next = node_symbol(param);
-                    arg = arg->next;
-                }else{
-                    error(cur, "expected type");
+            if(cur->str[0] == '{'){
+                for(node *param = nd->ty->param->next; param; param = param->next){
+                    push_local(param);
+                    param->offset = local_head->offset;
                 }
-                nd->val++;
-                if(expect(",")){
-                    continue;
-                }else{
-                    if(expect(")")){
-                        break;
-                    }else{
-                        error(cur, "expected ',' or ')'");
-                    }
-                }
-            }
-
-            if(expect(";")){
-                push_global(ty, id);
-            }else if(cur->str[0] == '{'){
-                push_global(ty, id);
                 nd->op1 = stmt();
                 nd->offset = local_head->offset;
                 push_ext(nd);
-            }else{
-                error(cur, "expected ';'");
+                continue;
             }
-            continue;
+        }else{
+            push_ext(node_global_def(nd));
+        }
+
+        if(!expect(";")){
+            error(cur, "expected ';'");
         }
     }
     return head->next;
 }
 
-void dcl(){
-    type *ty = get_type();
-    token *id = cur;
-    cur = cur->next;
-
-    // local variable
-    if(expect(";")){
-        if(ty->kind == VOID){
-            error(cur, "a variable declared void");
-        }
-        push_local(ty, id);
-        return;
-    }
-
-    // array
-    if(expect("[")){
-        if(ty->kind == VOID){
-            error(cur, "a variable declared array of voids");
-        }
-        int size = get_number();
-        if(!expect("]")){
-            error(cur, "expect ']'");
-        }
+void dcl_local(){
+    node *nd = get_symbol();
+    if(nd){
+        push_local(nd);
         if(!expect(";")){
             error(cur, "expected ';'");
         }
-        ty = type_array(ty, size);
-        push_local(ty, id);
+    }
+}
+
+node *get_symbol(){
+    type *base = calloc(1, sizeof(type));
+    node *nested = calloc(1, sizeof(node));
+
+    base = get_type();
+    while(expect("*")){
+        base = type_ptr(base);
+    }
+
+    if(expect("(")){
+        nested = get_symbol();
+        if(!expect(")")){
+            error(cur, "expect ')'");
+        }
+    }else{
+        nested = calloc(1, sizeof(node));
+        nested->ty = type_base(NOTYPE);
+        if(cur->kind == TK_ID){
+            nested->name = cur->str;
+            nested->len = cur->len;
+            cur = cur->next;
+        }
+    }
+
+    while(true){
+        if(expect("[")){
+            base = type_array(base, get_number());
+            if(expect("]")){
+                continue;
+            }else{
+                error(cur, "expected ']'");
+            }
+        }
+        if(expect("(")){
+            type *ty = calloc(1, sizeof(type));
+            ty->kind = FUNC;
+            ty->ptr_to = base;
+            ty->param = calloc(1, sizeof(node));
+            node *param = ty->param;
+            while(true){
+                if(cur->kind == TK_TYPE){
+                    param->next = get_symbol();
+                    param = param->next;
+                }
+                if(expect(",")) continue;
+                else if(expect(")")) break;
+                else error(cur, "expect ',' or ')'");
+            }
+            base = ty;
+        }
+        break;
+    }
+
+    type *ty = nested->ty;
+    while(true){
+        switch(ty->kind){
+            case NOTYPE:
+                ty->kind = base->kind;
+                ty->ptr_to = base->ptr_to;
+                ty->param = base->param;
+                ty->arr_size = base->arr_size;
+                return nested;
+            case VOID:
+            case CHAR:
+            case INT:
+                error(cur, "illegal type");
+                break;
+            case PTR:
+            case ARRAY:
+            case FUNC:
+                ty = ty->ptr_to;
+                break;
+        }
     }
 }
 
@@ -462,7 +457,7 @@ node *stmt(){
         node *elm = nd->head;
         while(!expect("}")){
             if(cur->kind == TK_TYPE){
-                dcl();
+                dcl_local();
             }else{
                 elm->next = stmt();
                 elm = elm->next;
