@@ -12,7 +12,7 @@ symb *local_head;
 int lc_num = 0;
 
 void dcl_local();
-node *type_ident();
+symb *type_ident();
 node *stmt();
 node *expr();
 node *assign();
@@ -113,12 +113,12 @@ void push_ext(node *nd){
     tail = nd;
 }
 
-void push_global(node *nd){
+void push_global(symb *sy){
     symb *var = calloc(1, sizeof(symb));
     var->next = global_head;
-    var->ty = nd->ty;
-    var->name = nd->name;
-    var->len = nd->len;
+    var->ty = sy->ty;
+    var->name = sy->name;
+    var->len = sy->len;
 
     global_head = var;
 }
@@ -321,15 +321,19 @@ node *program(token *token_head){
     tail = head;
 
     while(!is_eof()){
-        node *nd = type_ident();
-        push_global(nd);
+        symb *var = type_ident();
+        push_global(var);
 
-        if(nd->ty->kind == FUNC){
+        if(var->ty->kind == FUNC){
+            node *nd = calloc(1, sizeof(node));
             local_head = calloc(1, sizeof(symb));
             nd->kind = ND_FUNC_DEF;
+            nd->ty = var->ty;
+            nd->name = var->name;
+            nd->len = var->len;
 
             if(cur->str[0] == '{'){
-                for(node *param = nd->ty->param->next; param; param = param->next){
+                for(node *param = var->ty->param->next; param; param = param->next){
                     push_local(param);
                     param->offset = local_head->offset;
                 }
@@ -339,6 +343,10 @@ node *program(token *token_head){
                 continue;
             }
         }else{
+            node *nd = calloc(1, sizeof(node));
+            nd->ty = var->ty;
+            nd->name = var->name;
+            nd->len = var->len;
             push_ext(node_global_def(nd));
         }
 
@@ -350,7 +358,11 @@ node *program(token *token_head){
 }
 
 void dcl_local(){
-    node *nd = type_ident();
+    symb *var = type_ident();
+    node *nd = calloc(1, sizeof(node));
+    nd->ty = var->ty;
+    nd->name = var->name;
+    nd->len = var->len;
     if(nd){
         push_local(nd);
         if(!expect(";")){
@@ -372,22 +384,19 @@ type *base_type(){
     return type_base(NOTYPE);
 }
 
-node *type_ident(){
-    type *base = calloc(1, sizeof(type));
-    node *nested = calloc(1, sizeof(node));
-
-    base = base_type();
+symb *type_ident(){
+    type *base = base_type();
     while(expect("*")){
         base = type_ptr(base);
     }
 
+    symb *nested = calloc(1, sizeof(symb));
     if(expect("(")){
         nested = type_ident();
         if(!expect(")")){
             error(cur, "expect ')'");
         }
     }else{
-        nested = calloc(1, sizeof(node));
         nested->ty = type_base(NOTYPE);
         if(cur->kind == TK_ID){
             nested->name = cur->str;
@@ -413,7 +422,13 @@ node *type_ident(){
             node *param = ty->param;
             while(true){
                 if(cur->kind == TK_TYPE){
-                    param->next = type_ident();
+                    // param->next = type_ident();
+                    symb *var = type_ident();
+                    node *nd = calloc(1, sizeof(node));
+                    nd->ty = var->ty;
+                    nd->name = var->name;
+                    nd->len = var->len;
+                    param->next = nd;
                     param = param->next;
                 }
                 if(expect(",")) continue;
