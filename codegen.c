@@ -423,6 +423,11 @@ void gen_expr(node *nd){
             printf("    cqo\n");
             printf("    idiv rdi\n");
             break;
+        case ND_MOD:
+            printf("    cqo\n");
+            printf("    idiv rdi\n");
+            printf("    mov rax, rdx\n");
+            break;
     }
     printf("    push rax\n");
 }

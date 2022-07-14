@@ -46,14 +46,15 @@ typedef enum {
     ND_ASSIGN,
 
     // binary operator
-    ND_ADD,
-    ND_SUB,
-    ND_MUL,
-    ND_DIV,
     ND_EQ,
     ND_NEQ,
     ND_LT,
     ND_LEQ,
+    ND_ADD,
+    ND_SUB,
+    ND_MUL,
+    ND_DIV,
+    ND_MOD,
 
     // unary operator
     ND_NEG,

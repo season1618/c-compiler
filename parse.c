@@ -227,6 +227,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             break;
         case ND_MUL:
         case ND_DIV:
+        case ND_MOD:
             if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty = type_base(INT);
             }else{
@@ -633,6 +634,10 @@ node *mul(){
         }
         if(expect("/")){
             nd = node_binary(ND_DIV, nd, unary());
+            continue;
+        }
+        if(expect("%")){
+            nd = node_binary(ND_MOD, nd, unary());
             continue;
         }
         return nd;
