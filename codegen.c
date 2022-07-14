@@ -20,19 +20,17 @@ void pop_block(){
     block_top = block_top->next;
 }
 
-char *arg_reg_int[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
-char *int_arg_reg[6][4] = {
-    {"dil",  "di", "edi", "rdi"},
-    {"sil",  "si", "esi", "rsi"},
-    { "dl",  "dx", "edx", "rdx"},
-    { "cl",  "cx", "ecx", "rcx"},
-    {"r8b", "r8w", "r8d", "r8" },
-    {"r9b", "r9w", "r9d", "r9" }
-};
-
 char *rax[4] = {"al", "ax", "eax", "rax"};
 char *rbx[4] = {"bl", "bx", "ebx", "rbx"};
+
 char *rdi[4] = {"dil",  "di", "edi", "rdi"};
+char *rsi[4] = {"sil",  "si", "esi", "rsi"};
+char *rdx[4] = { "dl",  "dx", "edx", "rdx"};
+char *rcx[4] = { "cl",  "cx", "ecx", "rcx"};
+char  *r8[4] = {"r8b", "r8w", "r8d", "r8" };
+char  *r9[4] = {"r9b", "r9w", "r9d", "r9" };
+
+char **int_arg_reg[6] = {rdi, rsi, rdx, rcx, r8, r9};
 
 char *int_arg_register(int ord, int size){
     switch(size){
