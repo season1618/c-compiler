@@ -4,6 +4,7 @@ typedef enum {
     TK_PUNCT,
     TK_ID,
     TK_NUM,
+    TK_CHAR,
     TK_STRING,
     TK_EOF,
 } token_kind;
@@ -64,6 +65,7 @@ typedef enum {
     ND_GLOBAL,
     ND_LOCAL,
     ND_NUM,
+    ND_CHAR,
     ND_STRING,
 } node_kind;
 

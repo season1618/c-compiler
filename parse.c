@@ -185,11 +185,11 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
 
     switch(kind){
         case ND_ASSIGN:
-            if(lhs->ty->kind == PTR && rhs->ty->kind == ARRAY && match_type(lhs->ty->ptr_to, rhs->ty->ptr_to)){
+            if(match_type(lhs->ty, rhs->ty) || lhs->ty->kind == PTR && rhs->ty->kind == ARRAY && match_type(lhs->ty->ptr_to, rhs->ty->ptr_to)){
                 nd->ty = lhs->ty;
             }
             else{
-                nd->ty = rhs->ty;
+                error(cur, "invalid operands to assignment operator");
             }
             break;
         case ND_EQ:
@@ -316,6 +316,16 @@ node *node_symbol(token *id){
         }
     }
     error(id, "'%.*s' is undeclared", id->len, id->str);
+}
+
+node *node_char(){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_CHAR;
+    nd->ty = type_base(CHAR);
+    nd->val = cur->str[1];
+
+    cur = cur->next;
+    return nd;
 }
 
 node *node_num(){
@@ -682,6 +692,9 @@ node *primary(){
     }
     else if(cur->kind == TK_NUM){
         nd =  node_num();
+    }
+    else if(cur->kind == TK_CHAR){
+        nd = node_char();
     }
     else if(cur->kind == TK_STRING){
         nd = calloc(1, sizeof(node));

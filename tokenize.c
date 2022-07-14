@@ -69,6 +69,27 @@ void next_identifier(){
     cur = nxt;
 }
 
+void next_char(){
+    token *nxt = calloc(1, sizeof(token));
+    nxt->kind = TK_CHAR;
+    nxt->str = p;
+    nxt->len = 1;
+    p++;
+    while(*p != '\''){
+        p++;
+        nxt->len++;
+    }
+    p++;
+    nxt->len++;
+
+    if(nxt->len > 3){
+        error(cur, "multi character constant");
+    }
+
+    cur->next = nxt;
+    cur = nxt;
+}
+
 void next_string(){
     token *nxt = calloc(1, sizeof(token));
     nxt->kind = TK_STRING;
@@ -146,6 +167,10 @@ token *tokenize(char *code_head){
             continue;
         }
         
+        if(*p == '\''){
+            next_char();
+            continue;
+        }
         if(*p == '\"'){
             next_string();
             continue;
