@@ -705,9 +705,18 @@ node *primary(){
             nd = node_func_call(nd);
             continue;
         }
-        // if(expect("++")){
-        //     nd = node_binary(ND_SUB, node_assign(nd, node_add(nd)))
-        // }
+        if(expect("++")){
+            node *one1 = node_num(type_base(INT), 1);
+            node *one2 = node_num(type_base(INT), 1);
+            nd = node_binary(ND_SUB, node_binary(ND_ASSIGN, nd, node_binary(ND_ADD, nd, one1)), one2);
+            continue;
+        }
+        if(expect("--")){
+            node *one1 = node_num(type_base(INT), 1);
+            node *one2 = node_num(type_base(INT), 1);
+            nd = node_binary(ND_ADD, node_binary(ND_ASSIGN, nd, node_binary(ND_SUB, nd, one1)), one2);
+            continue;
+        }
         break;
     }
     return nd;
