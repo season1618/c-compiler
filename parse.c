@@ -657,6 +657,14 @@ node *unary(){
     if(expect("*")){
         return node_unary(ND_DEREF, unary());
     }
+    if(expect("++")){
+        node *nd = unary();
+        return node_binary(ND_ASSIGN, nd, node_binary(ND_ADD, nd, node_num(type_base(INT), 1)));
+    }
+    if(expect("--")){
+        node *nd = unary();
+        return node_binary(ND_ASSIGN, nd, node_binary(ND_SUB, nd, node_num(type_base(INT), 1)));
+    }
     if(expect("sizeof")){
         return node_num(type_base(INT), size_of(unary()->ty));
     }
