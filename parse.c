@@ -262,14 +262,6 @@ node *node_unary(node_kind kind, node *op){
     return nd;
 }
 
-node *node_sizeof(node *op){
-    node *nd = calloc(1, sizeof(node));
-    nd->kind = ND_CONST;
-    nd->ty = type_base(INT);
-    nd->val = size_of(op->ty);
-    return nd;
-}
-
 node *node_func_call(node *var){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_FUNC_CALL;
@@ -318,20 +310,11 @@ node *node_symbol(token *id){
     error(id, "'%.*s' is undeclared", id->len, id->str);
 }
 
-node *node_const(token_kind kind){
+node *node_num(type *ty, int val){
     node *nd = calloc(1, sizeof(node));
-    nd->kind = ND_CONST;
-    switch(kind){
-        case TK_CHAR:
-            nd->ty = type_base(CHAR);
-            nd->val = cur->str[1];
-            break;
-        case TK_NUM:
-            nd->ty = type_base(INT);
-            nd->val = cur->val;
-            break;
-    }
-    cur = cur->next;
+    nd->kind = ND_NUM;
+    nd->ty = ty;
+    nd->val = val;
     return nd;
 }
 
@@ -670,7 +653,7 @@ node *unary(){
         return node_unary(ND_DEREF, unary());
     }
     if(expect("sizeof")){
-        return node_sizeof(unary());
+        return node_num(type_base(INT), size_of(unary()->ty));
     }
     return primary();
 }
@@ -688,10 +671,12 @@ node *primary(){
         cur = cur->next;
     }
     else if(cur->kind == TK_NUM){
-        nd =  node_const(TK_NUM);
+        nd =  node_num(type_base(INT), cur->val);
+        cur = cur->next;
     }
     else if(cur->kind == TK_CHAR){
-        nd = node_const(TK_CHAR);
+        nd = node_num(type_base(CHAR), cur->str[1]);
+        cur = cur->next;
     }
     else if(cur->kind == TK_STRING){
         nd = calloc(1, sizeof(node));
@@ -720,6 +705,9 @@ node *primary(){
             nd = node_func_call(nd);
             continue;
         }
+        // if(expect("++")){
+        //     nd = node_binary(ND_SUB, node_assign(nd, node_add(nd)))
+        // }
         break;
     }
     return nd;

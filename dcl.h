@@ -64,7 +64,7 @@ typedef enum {
     ND_FUNC_CALL,
     ND_GLOBAL,
     ND_LOCAL,
-    ND_CONST,
+    ND_NUM,
     ND_STRING,
 } node_kind;
 
