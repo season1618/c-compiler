@@ -576,7 +576,22 @@ node *expr(){
 node *assign(){
     node *nd = cond();
     if(expect("=")){
-        nd = node_binary(ND_ASSIGN, nd, assign());
+        return node_binary(ND_ASSIGN, nd, assign());
+    }
+    if(expect("+=")){
+        return node_binary(ND_ASSIGN, nd, node_binary(ND_ADD, nd, assign()));
+    }
+    if(expect("-=")){
+        return node_binary(ND_ASSIGN, nd, node_binary(ND_SUB, nd, assign()));
+    }
+    if(expect("*=")){
+        return node_binary(ND_ASSIGN, nd, node_binary(ND_MUL, nd, assign()));
+    }
+    if(expect("/=")){
+        return node_binary(ND_ASSIGN, nd, node_binary(ND_DIV, nd, assign()));
+    }
+    if(expect("%=")){
+        return node_binary(ND_ASSIGN, nd, node_binary(ND_MOD, nd, assign()));
     }
     return nd;
 }
