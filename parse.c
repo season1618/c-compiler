@@ -264,7 +264,7 @@ node *node_unary(node_kind kind, node *op){
 
 node *node_sizeof(node *op){
     node *nd = calloc(1, sizeof(node));
-    nd->kind = ND_NUM;
+    nd->kind = ND_CONST;
     nd->ty = type_base(INT);
     nd->val = size_of(op->ty);
     return nd;
@@ -318,22 +318,19 @@ node *node_symbol(token *id){
     error(id, "'%.*s' is undeclared", id->len, id->str);
 }
 
-node *node_char(){
+node *node_const(token_kind kind){
     node *nd = calloc(1, sizeof(node));
-    nd->kind = ND_CHAR;
-    nd->ty = type_base(CHAR);
-    nd->val = cur->str[1];
-
-    cur = cur->next;
-    return nd;
-}
-
-node *node_num(){
-    node *nd = calloc(1, sizeof(node));
-    nd->kind = ND_NUM;
-    nd->ty = type_base(INT);
-    nd->val = cur->val;
-
+    nd->kind = ND_CONST;
+    switch(kind){
+        case TK_CHAR:
+            nd->ty = type_base(CHAR);
+            nd->val = cur->str[1];
+            break;
+        case TK_NUM:
+            nd->ty = type_base(INT);
+            nd->val = cur->val;
+            break;
+    }
     cur = cur->next;
     return nd;
 }
@@ -691,10 +688,10 @@ node *primary(){
         cur = cur->next;
     }
     else if(cur->kind == TK_NUM){
-        nd =  node_num();
+        nd =  node_const(TK_NUM);
     }
     else if(cur->kind == TK_CHAR){
-        nd = node_char();
+        nd = node_const(TK_CHAR);
     }
     else if(cur->kind == TK_STRING){
         nd = calloc(1, sizeof(node));

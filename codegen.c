@@ -374,10 +374,7 @@ void gen_expr(node *nd){
             }
             printf("    push rax\n");
             return;
-        case ND_NUM:
-            printf("    push %d\n", nd->val);
-            return;
-        case ND_CHAR:
+        case ND_CONST:
             printf("    push %d\n", nd->val);
             return;
         case ND_STRING:
