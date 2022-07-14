@@ -46,6 +46,8 @@ typedef enum {
     ND_ASSIGN,
 
     // binary operator
+    ND_LOG_OR,
+    ND_LOG_AND,
     ND_EQ,
     ND_NEQ,
     ND_LT,
@@ -63,11 +65,11 @@ typedef enum {
     ND_DEREF,
 
     // primary
-    ND_FUNC_CALL,
     ND_GLOBAL,
     ND_LOCAL,
     ND_NUM,
     ND_STRING,
+    ND_FUNC_CALL,
 } node_kind;
 
 typedef struct token token;

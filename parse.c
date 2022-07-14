@@ -17,6 +17,9 @@ symb *type_ident();
 node *stmt();
 node *expr();
 node *assign();
+node *cond();
+node *log_or();
+node *log_and();
 node *equal();
 node *relational();
 node *add();
@@ -571,9 +574,30 @@ node *expr(){
 }
 
 node *assign(){
-    node *nd = equal();
+    node *nd = cond();
     if(expect("=")){
         nd = node_binary(ND_ASSIGN, nd, assign());
+    }
+    return nd;
+}
+
+node *cond(){
+    node *nd = log_or();
+    return nd;
+}
+
+node *log_or(){
+    node *nd = log_and();
+    while(expect("||")){
+        nd = node_binary(ND_LOG_OR, nd, log_and());
+    }
+    return nd;
+}
+
+node *log_and(){
+    node *nd = equal();
+    while(expect("&&")){
+        nd = node_binary(ND_LOG_AND, nd, equal());
     }
     return nd;
 }

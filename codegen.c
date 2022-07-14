@@ -396,6 +396,24 @@ void gen_expr(node *nd){
     printf("    pop rax\n");
     
     switch(nd->kind){
+        case ND_LOG_OR:
+            printf("    cmp rax, 0\n");
+            printf("    setne al\n");
+            printf("    movsx rax, al\n");
+            printf("    cmp rdi, 0\n");
+            printf("    setne dil\n");
+            printf("    movsx rdi, dil\n");
+            printf("    or rax, rdi\n");
+            break;
+        case ND_LOG_AND:
+            printf("    cmp rax, 0\n");
+            printf("    setne al\n");
+            printf("    movsx rax, al\n");
+            printf("    cmp rdi, 0\n");
+            printf("    setne dil\n");
+            printf("    movsx rdi, dil\n");
+            printf("    and rax, rdi\n");
+            break;
         case ND_EQ:
             printf("    cmp rax, rdi\n");
             printf("    sete al\n");
