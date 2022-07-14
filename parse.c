@@ -250,6 +250,12 @@ node *node_unary(node_kind kind, node *op){
                 break;
             }
             error(cur, "invalid type argument of unary '-'");
+        case ND_LOG_NOT:
+            if(op->ty->kind == CHAR || op->ty->kind == INT || op->ty->kind == PTR || op->ty->kind == ARRAY){
+                nd->ty = op->ty;
+                break;
+            }
+            error(cur, "invalid type argument of unary '!'");
         case ND_ADR:
             nd->ty = type_ptr(op->ty);
             break;
@@ -653,6 +659,9 @@ node *unary(){
     }
     if(expect("&")){
         return node_unary(ND_ADR, unary());
+    }
+    if(expect("!")){
+        return node_unary(ND_LOG_NOT, unary());
     }
     if(expect("*")){
         return node_unary(ND_DEREF, unary());

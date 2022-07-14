@@ -287,6 +287,14 @@ void gen_expr(node *nd){
             printf("    neg rax\n");
             printf("    push rax\n");
             return;
+        case ND_LOG_NOT:
+            gen_expr(nd->op1);
+            printf("    pop rax\n");
+            printf("    cmp rax, 0\n");
+            printf("    sete al\n");
+            printf("    movsx rax, al\n");
+            printf("    push rax\n");
+            return;
         case ND_ADR:
             gen_lval(nd->op1);
             return;

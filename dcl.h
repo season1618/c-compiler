@@ -58,6 +58,7 @@ typedef enum {
 
     // unary operator
     ND_NEG,
+    ND_LOG_NOT,
     ND_ADR,
     ND_DEREF,
 
