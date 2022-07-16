@@ -17,13 +17,14 @@ typedef enum {
     PTR,
     ARRAY,
     FUNC,
+    STRUCT,
+    ENUM,
 } type_kind;
 
 typedef enum {
     VAR,
     TYPE,
-    STRUCT,
-    ENUM,
+    TAG,
 } symb_kind;
 
 typedef enum {
@@ -90,7 +91,8 @@ struct type {
     type_kind kind;
     type *ptr_to;
     symb *param;
-    size_t size;
+    int size;
+    int align;
 };
 
 struct symb {

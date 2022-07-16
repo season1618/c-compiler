@@ -7,6 +7,7 @@
 
 token *cur;
 node *head, *tail;
+symb *tag_head;
 symb *global_head;
 symb *local_head;
 int lc_num = 0;
@@ -113,12 +114,18 @@ int size_of(type *ty){
             return 8;
         case ARRAY:
             return size_of(ty->ptr_to) * ty->size;
+        case STRUCT:
+            return ty->size;
+        case ENUM:
+            return 4;
     }
 }
 
 int align_of(type *ty){
     switch(ty->kind){
+        case VOID:
         case CHAR:
+        case FUNC:
             return 1;
         case INT:
             return 4;
@@ -126,6 +133,16 @@ int align_of(type *ty){
             return 8;
         case ARRAY:
             return size_of(ty->ptr_to);
+        case STRUCT:{
+            // return ty->align;
+            int align = 0;
+            for(symb *memb = ty->param; memb->ty; memb = memb->next){
+                if(align < align_of(memb->ty)) align = align_of(memb->ty);
+            }//fprintf(stderr, "%d\n", align);
+            return align;
+        }
+        case ENUM:
+            return 4;
     }
 }
 
@@ -145,6 +162,17 @@ bool is_eof(){
 void push_ext(node *nd){
     tail->next = nd;
     tail = nd;
+}
+
+void push_tag(symb *tag){
+    symb *sy = calloc(1, sizeof(symb));
+    sy->kind = TAG;
+    sy->next = tag_head;
+    sy->ty = tag->ty;
+    sy->name = tag->name;
+    sy->len = tag->len;
+
+    tag_head = sy;
 }
 
 void push_global(symb_kind kind, symb *sy){
@@ -320,6 +348,20 @@ node *node_symbol(token *id){
     error(id, "'%.*s' is undeclared", id->len, id->str);
 }
 
+node *node_member(node *var, token *id){
+    if(var->ty->kind != STRUCT){
+        error(cur, "this variable is not a structure");
+    }
+    for(symb *memb = var->ty->param; memb; memb = memb->next){
+        if(id->len == memb->len && memcmp(id->str, memb->name, memb->len) == 0){
+            var->ty = memb->ty;
+            var->offset -= memb->offset;
+            return var;
+        }
+    }
+    error(id, "'this struct has no member named this");
+}
+
 node *node_num(type *ty, int val){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_NUM;
@@ -364,28 +406,43 @@ void ext(){
     }
     else{
         symb *var = type_ident();
-        push_global(VAR, var);
+        
+        switch(var->ty->kind){
+            case CHAR:
+            case INT:
+            case PTR:
+            case ARRAY:
+                push_global(VAR, var);
+                push_ext(node_global_def(var));
+                break;
+            case FUNC:
+                push_global(VAR, var);
+                local_head = calloc(1, sizeof(symb));
+                node *nd = calloc(1, sizeof(node));
+                nd->kind = ND_FUNC_DEF;
+                nd->ty = var->ty;
+                nd->name = var->name;
+                nd->len = var->len;
 
-        if(var->ty->kind == FUNC){
-            local_head = calloc(1, sizeof(symb));
-            node *nd = calloc(1, sizeof(node));
-            nd->kind = ND_FUNC_DEF;
-            nd->ty = var->ty;
-            nd->name = var->name;
-            nd->len = var->len;
-
-            if(cur->str[0] == '{'){
-                for(symb *param = var->ty->param->next; param; param = param->next){
-                    push_local(param);
-                    param->offset = local_head->offset;
+                if(cur->str[0] == '{'){
+                    for(symb *param = var->ty->param->next; param; param = param->next){
+                        push_local(param);
+                        param->offset = local_head->offset;
+                    }
+                    nd->op1 = stmt();
+                    nd->offset = local_head->offset;
+                    push_ext(nd);
+                    return;
                 }
-                nd->op1 = stmt();
-                nd->offset = local_head->offset;
-                push_ext(nd);
-                return;
-            }
-        }else{
-            push_ext(node_global_def(var));
+
+                break;
+            case STRUCT:
+            case ENUM:
+                if(var->name){
+                    push_global(VAR, var);
+                    push_ext(node_global_def(var));
+                }
+                break;
         }
 
         if(expect(";")){
@@ -396,7 +453,7 @@ void ext(){
     }
 }
 
-type *base_type(){
+type *type_head(){
     if(expect("void")){
         return type_base(VOID);
     }
@@ -405,6 +462,49 @@ type *base_type(){
     }
     if(expect("int")){
         return type_base(INT);
+    }
+    if(expect("struct")){
+        symb *sy;
+        type *ty = calloc(1, sizeof(type));
+        ty->kind = STRUCT;
+
+        if(cur->kind == TK_ID){
+            sy = calloc(1, sizeof(symb));
+            sy->kind = TAG;
+            sy->name = cur->str;
+            sy->len = cur->len;
+            cur = cur->next;
+        }
+        if(expect("{")){
+            symb *member_head = calloc(1, sizeof(symb));
+            int offset = 0;
+            int align = 0;
+            while(!expect("}")){
+                symb *var = type_ident();
+                if(!expect(";")){
+                    error(cur, "expect ';'");
+                }
+                var->next = member_head;
+                var->offset = (offset + align_of(var->ty) - 1) / align_of(var->ty) * align_of(var->ty);
+                offset = var->offset + size_of(var->ty);
+                if(align < align_of(var->ty)) align = align_of(var->ty);
+                member_head = var;
+            }
+            ty->param = member_head;
+            ty->size = (offset + align - 1) / align * align;
+            ty->align = align;
+            if(sy){
+                sy->ty = ty;
+                push_tag(sy);
+            }
+            return ty;
+        }else{
+            for(symb *tag = tag_head; tag; tag = tag->next){
+                if(sy->len == tag->len && memcmp(sy->name, tag->name, tag->len) == 0){
+                    return tag->ty;
+                }
+            }
+        }
     }
     for(symb *var = global_head; var; var = var->next){
         if(var->kind == TYPE && cur->len == var->len && memcmp(cur->str, var->name, var->len) == 0){
@@ -416,7 +516,7 @@ type *base_type(){
 }
 
 symb *type_ident(){
-    type *base = base_type();
+    type *base = type_head();
     while(expect("*")){
         base = type_ptr(base);
     }
@@ -764,6 +864,11 @@ node *primary(){
         }
         if(expect("(")){
             nd = node_func_call(nd);
+            continue;
+        }
+        if(expect(".")){
+            nd = node_member(nd, cur);
+            cur = cur->next;
             continue;
         }
         if(expect("++")){
