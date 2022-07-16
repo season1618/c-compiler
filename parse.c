@@ -163,13 +163,13 @@ void push_ext(node *nd){
     tail = nd;
 }
 
-void push_tag(symb *tag){
+void push_tag(type *ty){
     symb *sy = calloc(1, sizeof(symb));
     sy->kind = TAG;
     sy->next = tag_head;
-    sy->ty = tag->ty;
-    sy->name = tag->name;
-    sy->len = tag->len;
+    sy->ty = ty;
+    sy->name = ty->name;
+    sy->len = ty->len;
 
     tag_head = sy;
 }
@@ -463,15 +463,12 @@ type *type_head(){
         return type_base(INT);
     }
     if(expect("struct")){
-        symb *sy;
         type *ty = calloc(1, sizeof(type));
         ty->kind = STRUCT;
-
+        
         if(cur->kind == TK_ID){
-            sy = calloc(1, sizeof(symb));
-            sy->kind = TAG;
-            sy->name = cur->str;
-            sy->len = cur->len;
+            ty->name = cur->str;
+            ty->len = cur->len;
             cur = cur->next;
         }
         if(expect("{")){
@@ -492,22 +489,35 @@ type *type_head(){
             ty->head = member_head;
             ty->size = (offset + align - 1) / align * align;
             ty->align = align;
-            if(sy){
-                sy->ty = ty;
-                push_tag(sy);
-            }
-            return ty;
-        }else{
+        }
+
+        if(ty->name){
             for(symb *tag = tag_head; tag; tag = tag->next){
-                if(sy->len == tag->len && memcmp(sy->name, tag->name, tag->len) == 0){
+                if(ty->len == tag->len && memcmp(ty->name, tag->name, tag->len) == 0){
+                    if(ty->head){
+                        tag->ty->head = ty->head;
+                        tag->ty->size = ty->size;
+                        tag->ty->align = ty->align;
+                    }
                     return tag->ty;
                 }
             }
+            push_tag(ty);
         }
+        return ty;
     }
+
     for(symb *var = global_head; var; var = var->next){
         if(var->kind == TYPE && cur->len == var->len && memcmp(cur->str, var->name, var->len) == 0){
             cur = cur->next;
+            if(var->ty->len){
+                for(symb *tag = tag_head; tag; tag = tag->next){
+                    if(var->ty->len == tag->len && memcmp(var->ty->name, tag->name, tag->len) == 0){
+                        return tag->ty;
+                    }
+                }
+                error(cur, "undefined tag name");
+            }
             return var->ty;
         }
     }
@@ -563,6 +573,10 @@ symb *type_ident(){
         break;
     }
 
+    // if(nested->ty->kind == NOTYPE){
+    //     nested->ty = base;
+    //     return nested;
+    // }
     type *ty = nested->ty;
     while(true){
         switch(ty->kind){
@@ -571,6 +585,9 @@ symb *type_ident(){
                 ty->ptr_to = base->ptr_to;
                 ty->head = base->head;
                 ty->size = base->size;
+                ty->align = base->align;
+                ty->name = base->name;
+                ty->len = base->len;
                 return nested;
             case VOID:
             case CHAR:

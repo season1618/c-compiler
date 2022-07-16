@@ -93,6 +93,8 @@ struct type {
     symb *head;
     int size;
     int align;
+    char *name;
+    int len;
 };
 
 struct symb {
