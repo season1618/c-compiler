@@ -90,7 +90,7 @@ struct token {
 struct type {
     type_kind kind;
     type *ptr_to;
-    symb *param;
+    symb *head;
     int size;
     int align;
 };
