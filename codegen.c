@@ -311,32 +311,17 @@ void gen_expr(node *nd){
             gen_lval(nd->op1);
             return;
         case ND_DEREF:
-            gen_expr(nd->op1);
+            gen_lval(nd);
             printf("    pop rax\n");
             mov_memory_to_register(rax, "rax", nd->op1->ty->ptr_to);
             printf("    push rax\n");
             return;
         
         // primary
-        case ND_GLOBAL:{
-            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
-            switch(nd->ty->kind){
-                case CHAR:
-                    printf("    movsx rax, BYTE PTR [rax]\n");
-                    break;
-                case INT:
-                    printf("    movsx rax, DWORD PTR [rax]\n");
-                    break;
-                case PTR:
-                    printf("    mov rax, QWORD [rax]\n");
-                    break;
-            }
-            printf("    push rax\n");
-            return;
-        }
+        case ND_GLOBAL:
         case ND_LOCAL:
-            printf("    mov rax, rbp\n");
-            printf("    sub rax, %d\n", nd->offset);
+            gen_lval(nd);
+            printf("    pop rax\n");
             switch(nd->ty->kind){
                 case CHAR:
                     printf("    movsx rax, BYTE PTR [rax]\n");
