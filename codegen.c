@@ -263,7 +263,7 @@ void gen_lval(node *nd){
             printf("    push rax\n");
             return;
         case ND_DEREF:
-            gen_stmt(nd->op1);
+            gen_expr(nd->op1);
             return;
         case ND_DOT:
             gen_lval(nd->op1);
