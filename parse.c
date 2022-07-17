@@ -12,7 +12,10 @@ symb *global_head;
 symb *local_head;
 int lc_num = 0;
 
+void dcl_global();
 void ext();
+symb *type_whole();
+type *type_head();
 symb *type_ident();
 node *stmt();
 node *expr();
@@ -404,6 +407,15 @@ node *program(token *token_head){
     return head->next;
 }
 
+void dcl_global(symb *var){
+    if(var->name){
+        push_global(VAR, var);
+        if(var->ty->kind != FUNC){
+            push_ext(node_global_def(var));
+        }
+    }
+}
+
 void ext(){
     if(expect("typedef")){
         symb *var = type_ident();
@@ -416,51 +428,37 @@ void ext(){
         }
     }
     else{
+        type *base = type_head();
         symb *var = type_ident();
-        
-        switch(var->ty->kind){
-            case CHAR:
-            case INT:
-            case PTR:
-            case ARRAY:
-                push_global(VAR, var);
-                push_ext(node_global_def(var));
-                break;
-            case FUNC:
-                push_global(VAR, var);
-                local_head = calloc(1, sizeof(symb));
-                node *nd = calloc(1, sizeof(node));
-                nd->kind = ND_FUNC_DEF;
-                nd->ty = var->ty;
-                nd->name = var->name;
-                nd->len = var->len;
+        var = type_whole(var, base);
 
-                if(cur->str[0] == '{'){
-                    for(symb *param = var->ty->head->next; param; param = param->next){
-                        push_local(param);
-                        param->offset = local_head->offset;
-                    }
-                    nd->op1 = stmt();
-                    nd->offset = local_head->offset;
-                    push_ext(nd);
-                    return;
-                }
-
-                break;
-            case STRUCT:
-            case ENUM:
-                if(var->name){
-                    push_global(VAR, var);
-                    push_ext(node_global_def(var));
-                }
-                break;
-        }
-
-        if(expect(";")){
+        if(var->ty->kind == FUNC && var->is_func_def){
+            push_global(VAR, var);
+            node *nd = calloc(1, sizeof(node));
+            nd->kind = ND_FUNC_DEF;
+            nd->ty = var->ty;
+            nd->name = var->name;
+            nd->len = var->len;
+            
+            local_head = calloc(1, sizeof(symb));
+            for(symb *param = var->ty->head->next; param; param = param->next){
+                push_local(param);
+                param->offset = local_head->offset;
+            }
+            nd->op1 = stmt();
+            nd->offset = local_head->offset;
+            
+            push_ext(nd);
             return;
-        }else{
-            error(cur, "expected ';'");
         }
+
+        dcl_global(var);
+        while(expect(",")){
+            var = type_ident();
+            dcl_global(type_whole(var, base));
+        }
+        
+        if(!expect(";")) error(cur, "expected ';'");
     }
 }
 
@@ -615,6 +613,10 @@ symb *type_ident(){
             base = ty;
         }
         break;
+    }
+
+    if(cur->str[0] == '{'){
+        nested->is_func_def = true;
     }
 
     return type_whole(nested, base);

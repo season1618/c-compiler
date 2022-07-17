@@ -1,3 +1,5 @@
+#include<stdbool.h>
+
 typedef enum {
     TK_KEYWORD,
     TK_TYPE,
@@ -106,6 +108,7 @@ struct symb {
     char *name;
     int len;
     int offset;
+    bool is_func_def;
 };
 
 struct node {
