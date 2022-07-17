@@ -142,9 +142,7 @@ void gen_stmt(node *nd){
         case ND_BLOCK:
             for(node *cur = nd->head->next; cur; cur = cur->next){
                 gen_stmt(cur);
-                printf("    pop rax\n");
             }
-            printf("    push rax\n");
             return;
         case ND_IF:
             gen_expr(nd->op1);
@@ -172,10 +170,8 @@ void gen_stmt(node *nd){
 
                 printf("    je .L%d\n", l1);
                 gen_stmt(nd->op2);
-                printf("    pop rax\n");
 
                 printf(".L%d:\n", l1);
-                printf("    push rax\n");
             }
             return;
         case ND_WHILE:
@@ -204,6 +200,7 @@ void gen_stmt(node *nd){
             push_block(ND_FOR, l1, l2);
 
             gen_expr(nd->op1);
+            printf("    pop rax\n");
 
             printf(".L%d:\n", l1);
 
@@ -213,6 +210,7 @@ void gen_stmt(node *nd){
             printf("    je .L%d\n", l2);
             gen_stmt(nd->op4);
             gen_expr(nd->op3);
+            printf("    pop rax\n");
             printf("    jmp .L%d\n", l1);
 
             printf(".L%d:\n", l2);
@@ -222,7 +220,6 @@ void gen_stmt(node *nd){
         case ND_CONTINUE:
             for(block *blk = block_top; blk; blk = blk->next){
                 if(blk->kind == ND_WHILE || blk->kind == ND_FOR){
-                    printf("    push rax\n");
                     printf("    jmp .L%d\n", blk->begin);
                     return;
                 }
@@ -232,7 +229,6 @@ void gen_stmt(node *nd){
             return;
         case ND_BREAK:
             if(block_top){
-                printf("    push rax\n");
                 printf("    jmp .L%d\n", block_top->end);
                 return;
             }
@@ -249,6 +245,7 @@ void gen_stmt(node *nd){
             return;
     }
     gen_expr();
+    printf("    pop rax\n");
 }
 
 void gen_lval(node *nd){
