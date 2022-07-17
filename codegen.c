@@ -281,6 +281,27 @@ void gen_lval(node *nd){
     fprintf(stderr, "it is not lvalue\n");
 }
 
+void gen_rval(node *nd){
+    gen_lval(nd);
+    printf("    pop rax\n");
+    switch(nd->kind){
+        case ND_GLOBAL:
+        case ND_LOCAL:
+            switch(nd->ty->kind){
+                case CHAR:
+                case INT:
+                case PTR:
+                    mov_memory_to_register(rax, "rax", nd->ty);
+                    break;
+            }
+            break;
+        case ND_DEREF:
+            mov_memory_to_register(rax, "rax", nd->ty);
+            break;
+    }
+    printf("    push rax\n");
+}
+
 void gen_expr(node *nd){
     switch(nd->kind){
         // unary operator
@@ -310,46 +331,17 @@ void gen_expr(node *nd){
         case ND_ADR:
             gen_lval(nd->op1);
             return;
-        case ND_DEREF:
-            gen_expr(nd->op1);
-            printf("    pop rax\n");
-            mov_memory_to_register(rax, "rax", nd->op1->ty->ptr_to);
-            printf("    push rax\n");
-            return;
         
-        // primary
-        case ND_GLOBAL:{
-            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
-            switch(nd->ty->kind){
-                case CHAR:
-                    printf("    movsx rax, BYTE PTR [rax]\n");
-                    break;
-                case INT:
-                    printf("    movsx rax, DWORD PTR [rax]\n");
-                    break;
-                case PTR:
-                    printf("    mov rax, QWORD [rax]\n");
-                    break;
-            }
-            printf("    push rax\n");
-            return;
-        }
+        // right value
+        case ND_GLOBAL:
         case ND_LOCAL:
-            printf("    mov rax, rbp\n");
-            printf("    sub rax, %d\n", nd->offset);
-            switch(nd->ty->kind){
-                case CHAR:
-                    printf("    movsx rax, BYTE PTR [rax]\n");
-                    break;
-                case INT:
-                    printf("    movsx rax, DWORD PTR [rax]\n");
-                    break;
-                case PTR:
-                    printf("    mov rax, QWORD PTR [rax]\n");
-                    break;
-            }
-            printf("    push rax\n");
+        case ND_DEREF:
+        case ND_DOT:
+        case ND_ARROW:
+            gen_rval(nd);
             return;
+
+        // primary
         case ND_NUM:
             printf("    push %d\n", nd->val);
             return;
@@ -399,25 +391,11 @@ void gen_expr(node *nd){
             printf("    push rax\n");
             return;
         }
-        case ND_DOT:
-            gen_lval(nd->op1);
-            printf("    pop rax\n");
-            printf("    add rax, %d\n", nd->offset);
-            printf("    mov rax, [rax]\n");
-            printf("    push rax\n");
-            return;
-        case ND_ARROW:
-            gen_expr(nd->op1);
-            printf("    pop rax\n");
-            printf("    add rax, %d\n", nd->offset);
-            printf("    mov rax, [rax]\n");
-            printf("    push rax\n");
-            return;
     }
 
     // binary operator
-    gen_stmt(nd->op1);
-    gen_stmt(nd->op2);
+    gen_expr(nd->op1);
+    gen_expr(nd->op2);
     printf("    pop rdi\n");
     printf("    pop rax\n");
     
