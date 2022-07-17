@@ -143,8 +143,8 @@ bool read_punct(){
 token *tokenize(char *code_head){
     p = code_head;
 
-    token *head = calloc(1, sizeof(token));
-    cur = head;
+    token *token_head = calloc(1, sizeof(token));
+    cur = token_head;
 
     while(*p){
         // skip white space
@@ -199,5 +199,5 @@ token *tokenize(char *code_head){
     //     cur = cur->next;
     // }
     // fprintf(stderr, "\n");
-    return head->next;
+    return token_head->next;
 }

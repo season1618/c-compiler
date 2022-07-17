@@ -6,7 +6,7 @@
 #include "dcl.h"
 
 token *cur;
-node *head, *tail;
+node *node_head, *node_tail;
 symb *tag_head;
 symb *global_head;
 symb *local_head;
@@ -154,8 +154,8 @@ bool is_eof(){
 }
 
 void push_ext(node *nd){
-    tail->next = nd;
-    tail = nd;
+    node_tail->next = nd;
+    node_tail = nd;
 }
 
 void push_tag(type *ty){
@@ -398,13 +398,13 @@ node *node_arrow(node *var, token *id){
 
 node *program(token *token_head){
     cur = token_head;
-    head = calloc(1, sizeof(node));
-    tail = head;
+    node_head = calloc(1, sizeof(node));
+    node_tail = node_head;
 
     while(!is_eof()){
         ext();
     }
-    return head->next;
+    return node_head->next;
 }
 
 void dcl_global(symb *var){
