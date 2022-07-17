@@ -108,6 +108,7 @@ int size_of(type *ty){
         case FUNC:
             return 1;
         case INT:
+        case ENUM:
             return 4;
         case PTR:
             return 8;
@@ -115,8 +116,6 @@ int size_of(type *ty){
             return size_of(ty->ptr_to) * ty->size;
         case STRUCT:
             return ty->size;
-        case ENUM:
-            return 4;
     }
 }
 
@@ -127,21 +126,14 @@ int align_of(type *ty){
         case FUNC:
             return 1;
         case INT:
+        case ENUM:
             return 4;
         case PTR:
             return 8;
         case ARRAY:
             return size_of(ty->ptr_to);
-        case STRUCT:{
-            // return ty->align;
-            int align = 0;
-            for(symb *memb = ty->head; memb->ty; memb = memb->next){
-                if(align < align_of(memb->ty)) align = align_of(memb->ty);
-            }//fprintf(stderr, "%d\n", align);
-            return align;
-        }
-        case ENUM:
-            return 4;
+        case STRUCT:
+            return ty->align;
     }
 }
 
