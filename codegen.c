@@ -254,7 +254,7 @@ void gen_stmt(node *nd){
 void gen_lval(node *nd){
     switch(nd->kind){
         case ND_GLOBAL:
-            printf("    lea rax, %.*s[rip+%d]\n", nd->len, nd->name, nd->offset);
+            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
             printf("    push rax\n");
             return;
         case ND_LOCAL:
@@ -264,6 +264,12 @@ void gen_lval(node *nd){
             return;
         case ND_DEREF:
             gen_stmt(nd->op1);
+            return;
+        case ND_DOT:
+            gen_lval(nd->op1);
+            printf("    pop rax\n");
+            printf("    add rax, %d\n", nd->offset);
+            printf("    push rax\n");
             return;
     }
     fprintf(stderr, "it is not lvalue\n");
@@ -306,6 +312,45 @@ void gen_expr(node *nd){
             return;
         
         // primary
+        case ND_GLOBAL:{
+            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
+            switch(nd->ty->kind){
+                case CHAR:
+                    printf("    movsx rax, BYTE PTR [rax]\n");
+                    break;
+                case INT:
+                    printf("    movsx rax, DWORD PTR [rax]\n");
+                    break;
+                case PTR:
+                    printf("    mov rax, QWORD [rax]\n");
+                    break;
+            }
+            printf("    push rax\n");
+            return;
+        }
+        case ND_LOCAL:
+            printf("    mov rax, rbp\n");
+            printf("    sub rax, %d\n", nd->offset);
+            switch(nd->ty->kind){
+                case CHAR:
+                    printf("    movsx rax, BYTE PTR [rax]\n");
+                    break;
+                case INT:
+                    printf("    movsx rax, DWORD PTR [rax]\n");
+                    break;
+                case PTR:
+                    printf("    mov rax, QWORD PTR [rax]\n");
+                    break;
+            }
+            printf("    push rax\n");
+            return;
+        case ND_NUM:
+            printf("    push %d\n", nd->val);
+            return;
+        case ND_STRING:
+            printf("    lea rax, .LC%d[rip]\n", nd->offset);
+            printf("    push rax\n");
+            return;
         case ND_FUNC_CALL:{
             int num_stack_var;
             if(nd->val > 6) num_stack_var = nd->val - 6;
@@ -348,43 +393,11 @@ void gen_expr(node *nd){
             printf("    push rax\n");
             return;
         }
-        case ND_GLOBAL:{
-            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
-            switch(nd->ty->kind){
-                case CHAR:
-                    printf("    movsx rax, BYTE PTR [rax]\n");
-                    break;
-                case INT:
-                    printf("    movsx rax, DWORD PTR [rax]\n");
-                    break;
-                case PTR:
-                    printf("    mov rax, QWORD [rax]\n");
-                    break;
-            }
-            printf("    push rax\n");
-            return;
-        }
-        case ND_LOCAL:
-            printf("    mov rax, rbp\n");
-            printf("    sub rax, %d\n", nd->offset);
-            switch(nd->ty->kind){
-                case CHAR:
-                    printf("    movsx rax, BYTE PTR [rax]\n");
-                    break;
-                case INT:
-                    printf("    movsx rax, DWORD PTR [rax]\n");
-                    break;
-                case PTR:
-                    printf("    mov rax, QWORD PTR [rax]\n");
-                    break;
-            }
-            printf("    push rax\n");
-            return;
-        case ND_NUM:
-            printf("    push %d\n", nd->val);
-            return;
-        case ND_STRING:
-            printf("    lea rax, .LC%d[rip]\n", nd->offset);
+        case ND_DOT:
+            gen_lval(nd->op1);
+            printf("    pop rax\n");
+            printf("    add rax, %d\n", nd->offset);
+            printf("    mov rax, [rax]\n");
             printf("    push rax\n");
             return;
     }

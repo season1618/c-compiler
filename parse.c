@@ -316,7 +316,6 @@ node *node_var(token *id){
             nd->ty = var->ty;
             nd->name = var->name;
             nd->len = var->len;
-            nd->offset = 0;
             return nd;
         }
     }
@@ -347,15 +346,14 @@ node *node_member(node *var, token *id){
     if(var->ty->kind != STRUCT){
         error(cur, "this variable is not a structure");
     }
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_DOT;
+    nd->op1 = var;
     for(symb *memb = var->ty->head; memb; memb = memb->next){
         if(id->len == memb->len && memcmp(id->str, memb->name, memb->len) == 0){
-            var->ty = memb->ty;
-            if(var->kind == ND_LOCAL){
-                var->offset -= memb->offset;
-            }else if(var->kind == ND_GLOBAL){
-                var->offset += memb->offset;
-            }
-            return var;
+            nd->ty = memb->ty;
+            nd->offset = memb->offset;
+            return nd;
         }
     }
     error(id, "'this struct has no member named this");

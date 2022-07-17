@@ -71,6 +71,8 @@ typedef enum {
     ND_NUM,
     ND_STRING,
     ND_FUNC_CALL,
+    ND_DOT,
+    ND_ARROW,
 } node_kind;
 
 typedef struct token token;
