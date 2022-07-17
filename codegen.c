@@ -290,7 +290,7 @@ void gen_expr(node *nd){
 
             printf("    pop rdi\n");
             printf("    pop rax\n");
-            mov_register_to_memory("rax", rdi, nd->op1->ty);
+            mov_register_to_memory("rax", rdi, nd->ty);
             printf("    push rdi\n");
             return;
         case ND_NEG:
@@ -313,7 +313,7 @@ void gen_expr(node *nd){
         case ND_DEREF:
             gen_lval(nd);
             printf("    pop rax\n");
-            mov_memory_to_register(rax, "rax", nd->op1->ty->ptr_to);
+            mov_memory_to_register(rax, "rax", nd->ty);
             printf("    push rax\n");
             return;
         
@@ -385,16 +385,14 @@ void gen_expr(node *nd){
             return;
         }
         case ND_DOT:
-            gen_lval(nd->op1);
+            gen_lval(nd);
             printf("    pop rax\n");
-            printf("    add rax, %d\n", nd->offset);
             mov_memory_to_register(rax, "rax", nd->ty);
             printf("    push rax\n");
             return;
         case ND_ARROW:
-            gen_expr(nd->op1);
+            gen_lval(nd);
             printf("    pop rax\n");
-            printf("    add rax, %d\n", nd->offset);
             mov_memory_to_register(rax, "rax", nd->ty);
             printf("    push rax\n");
             return;
