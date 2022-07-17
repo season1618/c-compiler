@@ -75,8 +75,9 @@ void mov_memory_to_register(char *dest[4], char *src, type *ty){
 
 void gen_ext();
 void gen_stmt();
-void gen_lval();
 void gen_expr();
+void gen_lval();
+void gen_rval();
 
 void gen_code(node *node_head){
     printf(".intel_syntax noprefix\n");
@@ -251,60 +252,6 @@ void gen_stmt(node *nd){
     gen_expr();
 }
 
-void gen_lval(node *nd){
-    switch(nd->kind){
-        case ND_GLOBAL:
-            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
-            printf("    push rax\n");
-            return;
-        case ND_LOCAL:
-            printf("    mov rax, rbp\n");
-            printf("    sub rax, %d\n", nd->offset);
-            printf("    push rax\n");
-            return;
-        case ND_DEREF:
-            gen_expr(nd->op1);
-            return;
-        case ND_DOT:
-            gen_lval(nd->op1);
-            printf("    pop rax\n");
-            printf("    add rax, %d\n", nd->offset);
-            printf("    push rax\n");
-            return;
-        case ND_ARROW:
-            gen_expr(nd->op1);
-            printf("    pop rax\n");
-            printf("    add rax, %d\n", nd->offset);
-            printf("    push rax\n");
-            return;
-    }
-    fprintf(stderr, "it is not lvalue\n");
-}
-
-void gen_rval(node *nd){
-    gen_lval(nd);
-    printf("    pop rax\n");
-    switch(nd->kind){
-        case ND_GLOBAL:
-        case ND_LOCAL:        
-            switch(nd->ty->kind){
-                case CHAR:
-                case INT:
-                case PTR:
-                    mov_memory_to_register(rax, "rax", nd->ty);
-                    break;
-            }
-            break;
-        case ND_DEREF:
-        case ND_DOT:
-        case ND_ARROW:
-            mov_memory_to_register(rax, "rax", nd->ty);
-            
-            break;
-    }
-    printf("    push rax\n");
-}
-
 void gen_expr(node *nd){
     switch(nd->kind){
         // unary operator
@@ -457,6 +404,59 @@ void gen_expr(node *nd){
             printf("    cqo\n");
             printf("    idiv rdi\n");
             printf("    mov rax, rdx\n");
+            break;
+    }
+    printf("    push rax\n");
+}
+
+void gen_lval(node *nd){
+    switch(nd->kind){
+        case ND_GLOBAL:
+            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
+            printf("    push rax\n");
+            return;
+        case ND_LOCAL:
+            printf("    mov rax, rbp\n");
+            printf("    sub rax, %d\n", nd->offset);
+            printf("    push rax\n");
+            return;
+        case ND_DEREF:
+            gen_expr(nd->op1);
+            return;
+        case ND_DOT:
+            gen_lval(nd->op1);
+            printf("    pop rax\n");
+            printf("    add rax, %d\n", nd->offset);
+            printf("    push rax\n");
+            return;
+        case ND_ARROW:
+            gen_expr(nd->op1);
+            printf("    pop rax\n");
+            printf("    add rax, %d\n", nd->offset);
+            printf("    push rax\n");
+            return;
+    }
+    fprintf(stderr, "it is not lvalue\n");
+}
+
+void gen_rval(node *nd){
+    gen_lval(nd);
+    printf("    pop rax\n");
+    switch(nd->kind){
+        case ND_GLOBAL:
+        case ND_LOCAL:        
+            switch(nd->ty->kind){
+                case CHAR:
+                case INT:
+                case PTR:
+                    mov_memory_to_register(rax, "rax", nd->ty);
+                    break;
+            }
+            break;
+        case ND_DEREF:
+        case ND_DOT:
+        case ND_ARROW:
+            mov_memory_to_register(rax, "rax", nd->ty);
             break;
     }
     printf("    push rax\n");
