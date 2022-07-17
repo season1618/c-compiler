@@ -76,6 +76,7 @@ void mov_memory_to_register(char *dest[4], char *src, type *ty){
 void gen_ext();
 void gen_stmt();
 void gen_expr();
+void gen_binary();
 void gen_lval();
 void gen_rval();
 
@@ -143,9 +144,7 @@ void gen_stmt(node *nd){
         case ND_BLOCK:
             for(node *cur = nd->head->next; cur; cur = cur->next){
                 gen_stmt(cur);
-                printf("    pop rax\n");
             }
-            printf("    push rax\n");
             return;
         case ND_IF:
             gen_expr(nd->op1);
@@ -173,10 +172,8 @@ void gen_stmt(node *nd){
 
                 printf("    je .L%d\n", l1);
                 gen_stmt(nd->op2);
-                printf("    pop rax\n");
 
                 printf(".L%d:\n", l1);
-                printf("    push rax\n");
             }
             return;
         case ND_WHILE:
@@ -205,6 +202,7 @@ void gen_stmt(node *nd){
             push_block(ND_FOR, l1, l2);
 
             gen_expr(nd->op1);
+            printf("    pop rax\n");
 
             printf(".L%d:\n", l1);
 
@@ -214,6 +212,7 @@ void gen_stmt(node *nd){
             printf("    je .L%d\n", l2);
             gen_stmt(nd->op4);
             gen_expr(nd->op3);
+            printf("    pop rax\n");
             printf("    jmp .L%d\n", l1);
 
             printf(".L%d:\n", l2);
@@ -223,7 +222,6 @@ void gen_stmt(node *nd){
         case ND_CONTINUE:
             for(block *blk = block_top; blk; blk = blk->next){
                 if(blk->kind == ND_WHILE || blk->kind == ND_FOR){
-                    printf("    push rax\n");
                     printf("    jmp .L%d\n", blk->begin);
                     return;
                 }
@@ -233,7 +231,6 @@ void gen_stmt(node *nd){
             return;
         case ND_BREAK:
             if(block_top){
-                printf("    push rax\n");
                 printf("    jmp .L%d\n", block_top->end);
                 return;
             }
@@ -250,11 +247,12 @@ void gen_stmt(node *nd){
             return;
     }
     gen_expr();
+    printf("    pop rax\n");
 }
 
 void gen_expr(node *nd){
     switch(nd->kind){
-        // unary operator
+        // assignment
         case ND_ASSIGN:
             gen_lval(nd->op1);
             gen_expr(nd->op2);
@@ -263,13 +261,30 @@ void gen_expr(node *nd){
             printf("    pop rax\n");
             mov_register_to_memory("rax", rdi, nd->ty);
             printf("    push rdi\n");
-            return;
+            break;
+            
+        // binary operation
+        case ND_LOG_OR:
+        case ND_LOG_AND:
+        case ND_EQ:
+        case ND_NEQ:
+        case ND_LT:
+        case ND_LEQ:
+        case ND_ADD:
+        case ND_SUB:
+        case ND_MUL:
+        case ND_DIV:
+        case ND_MOD:
+            gen_binary(nd);
+            break;
+
+        // unary operation
         case ND_NEG:
             gen_expr(nd->op1);
             printf("    pop rax\n");
             printf("    neg rax\n");
             printf("    push rax\n");
-            return;
+            break;
         case ND_LOG_NOT:
             gen_expr(nd->op1);
             printf("    pop rax\n");
@@ -277,27 +292,28 @@ void gen_expr(node *nd){
             printf("    sete al\n");
             printf("    movsx rax, al\n");
             printf("    push rax\n");
-            return;
+            break;
         case ND_ADR:
             gen_lval(nd->op1);
-            return;
+            break;
         
-        // primary
+        // right value
         case ND_GLOBAL:
         case ND_LOCAL:
         case ND_DEREF:
         case ND_DOT:
         case ND_ARROW:
             gen_rval(nd);
-            return;
-        
+            break;
+
+        // primary
         case ND_NUM:
             printf("    push %d\n", nd->val);
             return;
         case ND_STRING:
             printf("    lea rax, .LC%d[rip]\n", nd->offset);
             printf("    push rax\n");
-            return;
+            break;
         case ND_FUNC_CALL:{
             int num_stack_var;
             if(nd->val > 6) num_stack_var = nd->val - 6;
@@ -315,10 +331,8 @@ void gen_expr(node *nd){
             }
 
             // move arguments to the stack
-            node *cur = nd->head;
-            while(cur){
+            for(node *cur = nd->head; cur; cur = cur->next){
                 gen_expr(cur);
-                cur = cur->next;
             }
 
             // move first 6 arguments to registers
@@ -338,11 +352,12 @@ void gen_expr(node *nd){
             printf("    mov rsp, [rsp]\n");
 
             printf("    push rax\n");
-            return;
+            break;
         }
     }
+}
 
-    // binary operator
+void gen_binary(node *nd){
     gen_expr(nd->op1);
     gen_expr(nd->op2);
     printf("    pop rdi\n");
@@ -444,7 +459,7 @@ void gen_rval(node *nd){
     printf("    pop rax\n");
     switch(nd->kind){
         case ND_GLOBAL:
-        case ND_LOCAL:        
+        case ND_LOCAL:
             switch(nd->ty->kind){
                 case CHAR:
                 case INT:
