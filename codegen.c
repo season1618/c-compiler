@@ -271,6 +271,12 @@ void gen_lval(node *nd){
             printf("    add rax, %d\n", nd->offset);
             printf("    push rax\n");
             return;
+        case ND_ARROW:
+            gen_expr(nd->op1);
+            printf("    pop rax\n");
+            printf("    add rax, %d\n", nd->offset);
+            printf("    push rax\n");
+            return;
     }
     fprintf(stderr, "it is not lvalue\n");
 }
@@ -395,6 +401,13 @@ void gen_expr(node *nd){
         }
         case ND_DOT:
             gen_lval(nd->op1);
+            printf("    pop rax\n");
+            printf("    add rax, %d\n", nd->offset);
+            printf("    mov rax, [rax]\n");
+            printf("    push rax\n");
+            return;
+        case ND_ARROW:
+            gen_expr(nd->op1);
             printf("    pop rax\n");
             printf("    add rax, %d\n", nd->offset);
             printf("    mov rax, [rax]\n");

@@ -12,11 +12,11 @@ token *cur;
 
 int NUM_KEYWORD = 10;
 int NUM_TYPE = 5;
-int NUM_PUNCT = 33;
+int NUM_PUNCT = 34;
 char *keywords[] = {"typedef", "return", "if", "else", "switch", "while", "for", "continue", "break", "sizeof"};
 char *types[] = {"void", "char", "int", "struct", "enum"};
 char *puncts[] = {
-    "+=", "-=", "*=", "/=", "%=", "||", "&&", "==", "!=", "<=", ">=", "++", "--",
+    "+=", "-=", "*=", "/=", "%=", "||", "&&", "==", "!=", "<=", ">=", "->", "++", "--",
     "=", "<", ">", "+", "-", "*", "/", "%", "&", "!", ".", ":", ",", ";", "(", ")", "{", "}", "[", "]"
 };
 

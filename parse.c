@@ -342,23 +342,6 @@ node *node_string(){
     return nd;
 }
 
-node *node_member(node *var, token *id){
-    if(var->ty->kind != STRUCT){
-        error(cur, "this variable is not a structure");
-    }
-    node *nd = calloc(1, sizeof(node));
-    nd->kind = ND_DOT;
-    nd->op1 = var;
-    for(symb *memb = var->ty->head; memb; memb = memb->next){
-        if(id->len == memb->len && memcmp(id->str, memb->name, memb->len) == 0){
-            nd->ty = memb->ty;
-            nd->offset = memb->offset;
-            return nd;
-        }
-    }
-    error(id, "'this struct has no member named this");
-}
-
 node *node_func_call(node *var){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_FUNC_CALL;
@@ -382,6 +365,40 @@ node *node_func_call(node *var){
         }
     }
     return nd;
+}
+
+node *node_dot(node *var, token *id){
+    if(var->ty->kind != STRUCT){
+        error(cur, "type of variable is not a structure");
+    }
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_DOT;
+    nd->op1 = var;
+    for(symb *memb = var->ty->head; memb; memb = memb->next){
+        if(id->len == memb->len && memcmp(id->str, memb->name, memb->len) == 0){
+            nd->ty = memb->ty;
+            nd->offset = memb->offset;
+            return nd;
+        }
+    }
+    error(id, "'this struct has no member named this");
+}
+
+node *node_arrow(node *var, token *id){
+    if(var->ty->kind != PTR || var->ty->ptr_to->kind != STRUCT){
+        error(cur, "type of variable is not a pointer to structure");
+    }
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_ARROW;
+    nd->op1 = var;
+    for(symb *memb = var->ty->ptr_to->head; memb; memb = memb->next){
+        if(id->len == memb->len && memcmp(id->str, memb->name, memb->len) == 0){
+            nd->ty = memb->ty;
+            nd->offset = memb->offset;
+            return nd;
+        }
+    }
+    error(id, "'this struct has no member named this");
 }
 
 node *program(token *token_head){
@@ -886,7 +903,12 @@ node *primary(){
             continue;
         }
         if(expect(".")){
-            nd = node_member(nd, cur);
+            nd = node_dot(nd, cur);
+            cur = cur->next;
+            continue;
+        }
+        if(expect("->")){
+            nd = node_arrow(nd, cur);
             cur = cur->next;
             continue;
         }
