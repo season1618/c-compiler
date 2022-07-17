@@ -254,7 +254,7 @@ void gen_stmt(node *nd){
 void gen_lval(node *nd){
     switch(nd->kind){
         case ND_GLOBAL:
-            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
+            printf("    lea rax, %.*s[rip+%d]\n", nd->len, nd->name, nd->offset);
             printf("    push rax\n");
             return;
         case ND_LOCAL:

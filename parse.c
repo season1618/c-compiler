@@ -316,6 +316,7 @@ node *node_var(token *id){
             nd->ty = var->ty;
             nd->name = var->name;
             nd->len = var->len;
+            nd->offset = 0;
             return nd;
         }
     }
@@ -349,7 +350,11 @@ node *node_member(node *var, token *id){
     for(symb *memb = var->ty->head; memb; memb = memb->next){
         if(id->len == memb->len && memcmp(id->str, memb->name, memb->len) == 0){
             var->ty = memb->ty;
-            var->offset -= memb->offset;
+            if(var->kind == ND_LOCAL){
+                var->offset -= memb->offset;
+            }else if(var->kind == ND_GLOBAL){
+                var->offset += memb->offset;
+            }
             return var;
         }
     }
