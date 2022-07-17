@@ -403,21 +403,21 @@ void gen_expr(node *nd){
             gen_lval(nd->op1);
             printf("    pop rax\n");
             printf("    add rax, %d\n", nd->offset);
-            printf("    mov rax, [rax]\n");
+            mov_memory_to_register(rax, "rax", nd->ty);
             printf("    push rax\n");
             return;
         case ND_ARROW:
             gen_expr(nd->op1);
             printf("    pop rax\n");
             printf("    add rax, %d\n", nd->offset);
-            printf("    mov rax, [rax]\n");
+            mov_memory_to_register(rax, "rax", nd->ty);
             printf("    push rax\n");
             return;
     }
 
     // binary operator
-    gen_stmt(nd->op1);
-    gen_stmt(nd->op2);
+    gen_expr(nd->op1);
+    gen_expr(nd->op2);
     printf("    pop rdi\n");
     printf("    pop rax\n");
     
