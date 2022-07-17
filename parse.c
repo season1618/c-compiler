@@ -536,6 +536,38 @@ type *type_head(){
     return type_base(NOTYPE);
 }
 
+symb *type_whole(symb *var, type *base){
+    symb *sy = var;
+    type *ty = sy->ty;
+    // if(nested->ty->kind == NOTYPE){
+    //     nested->ty = base;
+    //     return nested;
+    // }
+    while(true){
+        switch(ty->kind){
+            case NOTYPE:
+                ty->kind = base->kind;
+                ty->ptr_to = base->ptr_to;
+                ty->head = base->head;
+                ty->size = base->size;
+                ty->align = base->align;
+                ty->name = base->name;
+                ty->len = base->len;
+                return sy;
+            case VOID:
+            case CHAR:
+            case INT:
+                error(cur, "illegal type");
+                break;
+            case PTR:
+            case ARRAY:
+            case FUNC:
+                ty = ty->ptr_to;
+                break;
+        }
+    }
+}
+
 symb *type_ident(){
     type *base = type_head();
     while(expect("*")){
@@ -585,34 +617,7 @@ symb *type_ident(){
         break;
     }
 
-    // if(nested->ty->kind == NOTYPE){
-    //     nested->ty = base;
-    //     return nested;
-    // }
-    type *ty = nested->ty;
-    while(true){
-        switch(ty->kind){
-            case NOTYPE:
-                ty->kind = base->kind;
-                ty->ptr_to = base->ptr_to;
-                ty->head = base->head;
-                ty->size = base->size;
-                ty->align = base->align;
-                ty->name = base->name;
-                ty->len = base->len;
-                return nested;
-            case VOID:
-            case CHAR:
-            case INT:
-                error(cur, "illegal type");
-                break;
-            case PTR:
-            case ARRAY:
-            case FUNC:
-                ty = ty->ptr_to;
-                break;
-        }
-    }
+    return type_whole(nested, base);
 }
 
 node *stmt(){
