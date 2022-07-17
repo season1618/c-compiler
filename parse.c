@@ -421,11 +421,8 @@ void ext(){
         symb *var = type_ident();
         push_global(TYPE, var);
 
-        if(expect(";")){
-            return;
-        }else{
-            error(cur, "expected ';'");
-        }
+        if(!expect(";")) error(cur, "expected ';'");
+        return;
     }
     else{
         type *base = type_head();
@@ -459,6 +456,37 @@ void ext(){
         }
         
         if(!expect(";")) error(cur, "expected ';'");
+    }
+}
+
+symb *type_whole(symb *ident, type *base){
+    type *ty = ident->ty;
+    // if(nested->ty->kind == NOTYPE){
+    //     nested->ty = base;
+    //     return nested;
+    // }
+    while(true){
+        switch(ty->kind){
+            case NOTYPE:
+                ty->kind = base->kind;
+                ty->ptr_to = base->ptr_to;
+                ty->head = base->head;
+                ty->size = base->size;
+                ty->align = base->align;
+                ty->name = base->name;
+                ty->len = base->len;
+                return ident;
+            case VOID:
+            case CHAR:
+            case INT:
+                error(cur, "illegal type");
+                break;
+            case PTR:
+            case ARRAY:
+            case FUNC:
+                ty = ty->ptr_to;
+                break;
+        }
     }
 }
 
@@ -534,55 +562,23 @@ type *type_head(){
     return type_base(NOTYPE);
 }
 
-symb *type_whole(symb *var, type *base){
-    symb *sy = var;
-    type *ty = sy->ty;
-    // if(nested->ty->kind == NOTYPE){
-    //     nested->ty = base;
-    //     return nested;
-    // }
-    while(true){
-        switch(ty->kind){
-            case NOTYPE:
-                ty->kind = base->kind;
-                ty->ptr_to = base->ptr_to;
-                ty->head = base->head;
-                ty->size = base->size;
-                ty->align = base->align;
-                ty->name = base->name;
-                ty->len = base->len;
-                return sy;
-            case VOID:
-            case CHAR:
-            case INT:
-                error(cur, "illegal type");
-                break;
-            case PTR:
-            case ARRAY:
-            case FUNC:
-                ty = ty->ptr_to;
-                break;
-        }
-    }
-}
-
 symb *type_ident(){
     type *base = type_head();
     while(expect("*")){
         base = type_ptr(base);
     }
 
-    symb *nested = calloc(1, sizeof(symb));
+    symb *ident = calloc(1, sizeof(symb));
     if(expect("(")){
-        nested = type_ident();
+        ident = type_ident();
         if(!expect(")")){
             error(cur, "expect ')'");
         }
     }else{
-        nested->ty = type_base(NOTYPE);
+        ident->ty = type_base(NOTYPE);
         if(cur->kind == TK_ID){
-            nested->name = cur->str;
-            nested->len = cur->len;
+            ident->name = cur->str;
+            ident->len = cur->len;
             cur = cur->next;
         }
     }
@@ -590,11 +586,8 @@ symb *type_ident(){
     while(true){
         if(expect("[")){
             base = type_array(base, get_number());
-            if(expect("]")){
-                continue;
-            }else{
-                error(cur, "expected ']'");
-            }
+            if(expect("]")) continue;
+            error(cur, "expected ']'");
         }
         if(expect("(")){
             type *ty = calloc(1, sizeof(type));
@@ -607,8 +600,8 @@ symb *type_ident(){
                 param->next = type_ident();
                 param = param->next;
                 if(expect(",")) continue;
-                else if(expect(")")) break;
-                else error(cur, "expect ',' or ')'");
+                if(expect(")")) break;
+                error(cur, "expect ',' or ')'");
             }
             base = ty;
         }
@@ -616,10 +609,10 @@ symb *type_ident(){
     }
 
     if(cur->str[0] == '{'){
-        nested->is_func_def = true;
+        ident->is_func_def = true;
     }
 
-    return type_whole(nested, base);
+    return type_whole(ident, base);
 }
 
 node *stmt(){
