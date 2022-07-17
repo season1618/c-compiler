@@ -13,7 +13,9 @@ symb *local_head;
 int lc_num = 0;
 
 void dcl_global();
+void dcl_local();
 void ext();
+void dcl();
 symb *type_whole();
 type *type_head();
 symb *type_ident();
@@ -416,6 +418,12 @@ void dcl_global(symb *var){
     }
 }
 
+void dcl_local(symb *var){
+    if(var->name){
+        push_local(var);
+    }
+}
+
 void ext(){
     if(expect("typedef")){
         symb *var = type_ident();
@@ -425,9 +433,9 @@ void ext(){
         return;
     }
     else{
-        type *base = type_head();
+        type *head = type_head();
         symb *var = type_ident();
-        var = type_whole(var, base);
+        var = type_whole(var, head);
 
         if(var->ty->kind == FUNC && var->is_func_def){
             push_global(VAR, var);
@@ -452,7 +460,35 @@ void ext(){
         dcl_global(var);
         while(expect(",")){
             var = type_ident();
-            dcl_global(type_whole(var, base));
+            dcl_global(type_whole(var, head));
+        }
+        
+        if(!expect(";")) error(cur, "expected ';'");
+    }
+}
+
+void dcl(){
+    // if(expect("typedef")){
+    //     symb *var = type_ident();
+    //     push_global(TYPE, var);
+
+    //     if(!expect(";")) error(cur, "expected ';'");
+    //     return;
+    // }
+    // else
+    {
+        type *head = type_head();
+        symb *var = type_ident();
+        var = type_whole(var, head);
+
+        if(var->ty->kind == FUNC && var->is_func_def){
+            error(cur, "a function defined in local scope");
+        }
+
+        dcl_local(var);
+        while(expect(",")){
+            var = type_ident();
+            dcl_local(type_whole(var, head));
         }
         
         if(!expect(";")) error(cur, "expected ';'");
@@ -624,11 +660,7 @@ node *stmt(){
         node *elm = nd->head;
         while(!expect("}")){
             if(find_type()){
-                symb *var = type_ident();
-                push_local(var);
-                if(!expect(";")){
-                    error(cur, "expected ';'");
-                }
+                dcl();
             }else{
                 elm->next = stmt();
                 elm = elm->next;
