@@ -281,6 +281,30 @@ void gen_lval(node *nd){
     fprintf(stderr, "it is not lvalue\n");
 }
 
+void gen_rval(node *nd){
+    gen_lval(nd);
+    printf("    pop rax\n");
+    switch(nd->kind){
+        case ND_GLOBAL:
+        case ND_LOCAL:        
+            switch(nd->ty->kind){
+                case CHAR:
+                case INT:
+                case PTR:
+                    mov_memory_to_register(rax, "rax", nd->ty);
+                    break;
+            }
+            break;
+        case ND_DEREF:
+        case ND_DOT:
+        case ND_ARROW:
+            mov_memory_to_register(rax, "rax", nd->ty);
+            
+            break;
+    }
+    printf("    push rax\n");
+}
+
 void gen_expr(node *nd){
     switch(nd->kind){
         // unary operator
@@ -310,31 +334,16 @@ void gen_expr(node *nd){
         case ND_ADR:
             gen_lval(nd->op1);
             return;
-        case ND_DEREF:
-            gen_lval(nd);
-            printf("    pop rax\n");
-            mov_memory_to_register(rax, "rax", nd->ty);
-            printf("    push rax\n");
-            return;
         
         // primary
         case ND_GLOBAL:
         case ND_LOCAL:
-            gen_lval(nd);
-            printf("    pop rax\n");
-            switch(nd->ty->kind){
-                case CHAR:
-                    printf("    movsx rax, BYTE PTR [rax]\n");
-                    break;
-                case INT:
-                    printf("    movsx rax, DWORD PTR [rax]\n");
-                    break;
-                case PTR:
-                    printf("    mov rax, QWORD PTR [rax]\n");
-                    break;
-            }
-            printf("    push rax\n");
+        case ND_DEREF:
+        case ND_DOT:
+        case ND_ARROW:
+            gen_rval(nd);
             return;
+        
         case ND_NUM:
             printf("    push %d\n", nd->val);
             return;
@@ -384,18 +393,6 @@ void gen_expr(node *nd){
             printf("    push rax\n");
             return;
         }
-        case ND_DOT:
-            gen_lval(nd);
-            printf("    pop rax\n");
-            mov_memory_to_register(rax, "rax", nd->ty);
-            printf("    push rax\n");
-            return;
-        case ND_ARROW:
-            gen_lval(nd);
-            printf("    pop rax\n");
-            mov_memory_to_register(rax, "rax", nd->ty);
-            printf("    push rax\n");
-            return;
     }
 
     // binary operator
