@@ -69,12 +69,22 @@ bool match_type(type *t1, type *t2){
         return false;
     }
     switch(t1->kind){
-        case PTR:
-        case ARRAY:
-            return match_type(t1->ptr_to, t2->ptr_to);
+        case VOID:
         case CHAR:
         case INT:
             return true;
+        case PTR:
+        case ARRAY:
+            return match_type(t1->ptr_to, t2->ptr_to);
+        case FUNC:
+            if(!match_type(t1->ptr_to, t2->ptr_to)) return false;
+            for(symb *param1 = t1->head, *param2 = t2->head; param1 && param2; param1 = param1->next, param2 = param2->next){
+                if(!match_type(param1->ty, param2->ty)) return false;
+            }
+            return true;
+        case STRUCT:
+            if(!t1->name || !t2->name) return false;
+            return t1->len == t2->len && memcmp(t1->name, t2->name, t1->len) == 0;
     }
 }
 
