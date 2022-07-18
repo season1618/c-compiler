@@ -448,15 +448,6 @@ node *program(token *token_head){
     return node_head->next;
 }
 
-void dcl_global(symb *var){
-    if(var->name){
-        push_global(VAR, var);
-        if(var->ty->kind != FUNC){
-            push_ext(node_global_def(var));
-        }
-    }
-}
-
 void dcl_local(symb *var){
     if(var->name){
         push_local(var);
@@ -473,36 +464,40 @@ void ext(){
     }
     else{
         type *head = type_head();
-        symb *var = type_ident();
-        var = type_whole(var, head);
+        while(true){
+            symb *var = type_ident();
+            var = type_whole(var, head);
 
-        if(var->ty->kind == FUNC && var->is_func_def){
-            push_global(VAR, var);
-            node *nd = calloc(1, sizeof(node));
-            nd->kind = ND_FUNC_DEF;
-            nd->ty = var->ty;
-            nd->name = var->name;
-            nd->len = var->len;
-            
-            local_head = calloc(1, sizeof(symb));
-            for(symb *param = var->ty->head; param; param = param->next){
-                push_local(param);
-                param->offset = local_head->offset;
+            if(var->ty->kind == FUNC && var->is_func_def){
+                push_global(VAR, var);
+                node *nd = calloc(1, sizeof(node));
+                nd->kind = ND_FUNC_DEF;
+                nd->ty = var->ty;
+                nd->name = var->name;
+                nd->len = var->len;
+                
+                local_head = calloc(1, sizeof(symb));
+                for(symb *param = var->ty->head; param; param = param->next){
+                    push_local(param);
+                    param->offset = local_head->offset;
+                }
+                nd->op1 = stmt();
+                nd->offset = local_head->offset;
+                
+                push_ext(nd);
+                return;
             }
-            nd->op1 = stmt();
-            nd->offset = local_head->offset;
-            
-            push_ext(nd);
-            return;
-        }
 
-        dcl_global(var);
-        while(expect(",")){
-            var = type_ident();
-            dcl_global(type_whole(var, head));
+            if(var->name){
+                push_global(VAR, var);
+                if(var->ty->kind != FUNC){
+                    push_ext(node_global_def(var));
+                }
+            }
+            if(expect(",")) continue;
+            if(expect(";")) break;
+            error(cur, "expected ';'");
         }
-        
-        if(!expect(";")) error(cur, "expected ';'");
     }
 }
 
