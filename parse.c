@@ -485,7 +485,7 @@ void ext(){
             nd->len = var->len;
             
             local_head = calloc(1, sizeof(symb));
-            for(symb *param = var->ty->head->next; param; param = param->next){
+            for(symb *param = var->ty->head; param; param = param->next){
                 push_local(param);
                 param->offset = local_head->offset;
             }
@@ -675,6 +675,7 @@ symb *type_ident(){
                 if(expect(")")) break;
                 error(cur, "expect ',' or ')'");
             }
+            ty->head = ty->head->next;
             base = ty;
         }
         break;
@@ -702,6 +703,7 @@ node *stmt(){
                 elm = elm->next;
             }
         }
+        nd->head = nd->head->next;
     }
     else if(expect("if")){
         if(!expect("(")) error(cur, "expected '('");

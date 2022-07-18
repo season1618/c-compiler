@@ -101,7 +101,7 @@ void gen_ext(node *nd){
 
             // move arguments from registers or the stack on the rbp to the stack under rbp.
             int num_param_int = 0;
-            for(symb *param = nd->ty->head->next; param; param = param->next){
+            for(symb *param = nd->ty->head; param; param = param->next){
                 if(num_param_int < 6){
                     printf("    mov rax, rbp\n");
                     printf("    sub rax, %d\n", param->offset);
@@ -142,7 +142,7 @@ void gen_stmt(node *nd){
     switch(nd->kind){
         int l1, l2;
         case ND_BLOCK:
-            for(node *cur = nd->head->next; cur; cur = cur->next){
+            for(node *cur = nd->head; cur; cur = cur->next){
                 gen_stmt(cur);
             }
             return;
