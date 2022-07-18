@@ -38,9 +38,8 @@ bool expect(char *op){
     if(cur->len == strlen(op) && memcmp(cur->str, op, cur->len) == 0){
         cur = cur->next;
         return true;
-    }else{
-        return false;
     }
+    return false;
 }
 
 type *type_base(type_kind kind){
@@ -161,10 +160,6 @@ int get_number(){
     int val = cur->val;
     cur = cur->next;
     return val;
-}
-
-bool is_eof(){
-    return cur->kind == TK_EOF;
 }
 
 void push_ext(node *nd){
@@ -365,13 +360,9 @@ node *node_func_call(node *var){
         arg->next = nd->head;
         nd->head = arg;
         nd->val++;
-        if(expect(",")){
-            continue;
-        }else if(expect(")")){
-            break;
-        }else{
-            error(cur, "expected ',' or ')'");
-        }
+        if(expect(",")) continue;
+        if(expect(")")) break;
+        error(cur, "expected ',' or ')'");
     }
     return nd;
 }
@@ -411,6 +402,7 @@ void print_type(type *ty, int num){
             break;
     }
 }
+
 node *node_dot(node *var, token *id){
     if(var->ty->kind != STRUCT){
         error(cur, "type of variable is not a structure");
@@ -450,7 +442,7 @@ node *program(token *token_head){
     node_head = calloc(1, sizeof(node));
     node_tail = node_head;
 
-    while(!is_eof()){
+    while(cur->kind != TK_EOF){
         ext();
     }
     return node_head->next;
@@ -595,7 +587,6 @@ type *type_head(){
                 while(true){
                     symb *var = type_ident();
                     var = type_whole(var, head);
-                    // if(!expect(";")) error(cur, "expect ';'");
                     var->next = member_head;
                     var->offset = (offset + align_of(var->ty) - 1) / align_of(var->ty) * align_of(var->ty);
                     offset = var->offset + size_of(var->ty);
@@ -654,9 +645,7 @@ symb *type_ident(){
     symb *ident = calloc(1, sizeof(symb));
     if(expect("(")){
         ident = type_ident();
-        if(!expect(")")){
-            error(cur, "expect ')'");
-        }
+        if(!expect(")")) error(cur, "expect ')'");
     }else{
         ident->ty = type_base(NOTYPE);
         if(cur->kind == TK_ID){
@@ -930,9 +919,7 @@ node *primary(){
     node *nd;
     if(expect("(")){
         nd = expr();
-        if(!expect(")")){
-            error(cur, "expect ')'");
-        }
+        if(!expect(")")) error(cur, "expect ')'");
     }
     else if(cur->kind == TK_ID){
         nd = node_var(cur);
@@ -964,9 +951,7 @@ node *primary(){
         if(expect("[")){
             node *size = assign();
             nd = node_unary(ND_DEREF, node_binary(ND_ADD, nd, size));
-            if(!expect("]")){
-                error(cur, "expect ']'");
-            }
+            if(!expect("]")) error(cur, "expect ']'");
             continue;
         }
         if(expect("(")){
