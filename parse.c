@@ -5,6 +5,8 @@
 
 #include "dcl.h"
 
+#define str(x) #x
+
 token *cur;
 node *node_head, *node_tail;
 symb *tag_head;
@@ -364,6 +366,41 @@ node *node_func_call(node *var){
     return nd;
 }
 
+void print_type(type *ty, int num){
+    if(num == 0) return;
+    num--;
+    switch(ty->kind){
+        case NOTYPE:
+            fprintf(stderr, "NOTYPE");
+            break;
+        case VOID:
+            fprintf(stderr, "VOID");
+            break;
+        case CHAR:
+            fprintf(stderr, "CHAR");
+            break;
+        case INT:
+            fprintf(stderr, "INT");
+            break;
+        case PTR:
+            fprintf(stderr, "PTR -> ");
+            print_type(ty->ptr_to, num);
+            break;
+        case FUNC:
+            fprintf(stderr, "FUNC -> ");
+            print_type(ty->ptr_to, num);
+            break;
+        case STRUCT:
+            fprintf(stderr, "STRUCT { ");
+            for(symb *sy = ty->head; sy; sy = sy->next){
+                fprintf(stderr, "%.*s ", sy->len, sy->name);
+                print_type(sy->ty, num);
+                fprintf(stderr, ", ");
+            }
+            fprintf(stderr, "}");
+            break;
+    }
+}
 node *node_dot(node *var, token *id){
     if(var->ty->kind != STRUCT){
         error(cur, "type of variable is not a structure");
@@ -378,7 +415,7 @@ node *node_dot(node *var, token *id){
             return nd;
         }
     }
-    error(id, "'this struct has no member named this");
+    error(id, "this struct has no member named this");
 }
 
 node *node_arrow(node *var, token *id){
@@ -496,21 +533,15 @@ void dcl(){
 }
 
 symb *type_whole(symb *ident, type *base){
+    if(ident->ty->kind == NOTYPE){
+        ident->ty = base;
+        return ident;
+    }
     type *ty = ident->ty;
-    // if(nested->ty->kind == NOTYPE){
-    //     nested->ty = base;
-    //     return nested;
-    // }
-    while(true){
-        switch(ty->kind){
+    while(ty->ptr_to){
+        switch(ty->ptr_to->kind){
             case NOTYPE:
-                ty->kind = base->kind;
-                ty->ptr_to = base->ptr_to;
-                ty->head = base->head;
-                ty->size = base->size;
-                ty->align = base->align;
-                ty->name = base->name;
-                ty->len = base->len;
+                ty->ptr_to = base;
                 return ident;
             case VOID:
             case CHAR:
@@ -546,19 +577,25 @@ type *type_head(){
             cur = cur->next;
         }
         if(expect("{")){
-            symb *member_head = calloc(1, sizeof(symb));
+            symb *member_head;
             int offset = 0;
             int align = 0;
             while(!expect("}")){
-                symb *var = type_ident();
-                if(!expect(";")){
-                    error(cur, "expect ';'");
-                }
-                var->next = member_head;
-                var->offset = (offset + align_of(var->ty) - 1) / align_of(var->ty) * align_of(var->ty);
-                offset = var->offset + size_of(var->ty);
-                if(align < align_of(var->ty)) align = align_of(var->ty);
-                member_head = var;
+                type *head = type_head();
+                //while(true){
+                    symb *var = type_ident();
+                    var = type_whole(var, head);
+                    if(!expect(";")) error(cur, "expect ';'");
+                    var->next = member_head;
+                    var->offset = (offset + align_of(var->ty) - 1) / align_of(var->ty) * align_of(var->ty);
+                    offset = var->offset + size_of(var->ty);
+                    if(align < align_of(var->ty)) align = align_of(var->ty);
+                    member_head = var;
+
+                    // if(expect(",")) continue;
+                    // if(expect(";")) break;
+                    // error(cur, "expect ';'");
+                //}
             }
             ty->head = member_head;
             ty->size = (offset + align - 1) / align * align;
