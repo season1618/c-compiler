@@ -592,20 +592,20 @@ type *type_head(){
             int align = 0;
             while(!expect("}")){
                 type *head = type_head();
-                //while(true){
+                while(true){
                     symb *var = type_ident();
                     var = type_whole(var, head);
-                    if(!expect(";")) error(cur, "expect ';'");
+                    // if(!expect(";")) error(cur, "expect ';'");
                     var->next = member_head;
                     var->offset = (offset + align_of(var->ty) - 1) / align_of(var->ty) * align_of(var->ty);
                     offset = var->offset + size_of(var->ty);
                     if(align < align_of(var->ty)) align = align_of(var->ty);
                     member_head = var;
 
-                    // if(expect(",")) continue;
-                    // if(expect(";")) break;
-                    // error(cur, "expect ';'");
-                //}
+                    if(expect(",")) continue;
+                    if(expect(";")) break;
+                    error(cur, "expect ';'");
+                }
             }
             ty->head = member_head;
             ty->size = (offset + align - 1) / align * align;
