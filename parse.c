@@ -448,12 +448,6 @@ node *program(token *token_head){
     return node_head->next;
 }
 
-void dcl_local(symb *var){
-    if(var->name){
-        push_local(var);
-    }
-}
-
 void ext(){
     if(expect("typedef")){
         symb *var = type_ident();
@@ -512,20 +506,21 @@ void dcl(){
     // else
     {
         type *head = type_head();
-        symb *var = type_ident();
-        var = type_whole(var, head);
+        while(true){
+            symb *var = type_ident();
+            var = type_whole(var, head);
 
-        if(var->ty->kind == FUNC && var->is_func_def){
-            error(cur, "a function defined in local scope");
-        }
+            if(var->ty->kind == FUNC && var->is_func_def){
+                error(cur, "a function defined in local scope");
+            }
 
-        dcl_local(var);
-        while(expect(",")){
-            var = type_ident();
-            dcl_local(type_whole(var, head));
+            if(var->name){
+                push_local(var);
+            }
+            if(expect(",")) continue;
+            if(expect(";")) break;
+            error(cur, "expected ';'");
         }
-        
-        if(!expect(";")) error(cur, "expected ';'");
     }
 }
 
