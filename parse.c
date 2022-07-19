@@ -5,8 +5,6 @@
 
 #include "dcl.h"
 
-#define str(x) #x
-
 token *cur;
 node *node_head, *node_tail;
 symb *tag_head;
@@ -14,8 +12,6 @@ symb *global_head;
 symb *local_head;
 int lc_num = 0;
 
-void dcl_global();
-void dcl_local();
 void ext();
 void dcl();
 symb *type_whole();
@@ -150,6 +146,42 @@ int align_of(type *ty){
             return size_of(ty->ptr_to);
         case STRUCT:
             return ty->align;
+    }
+}
+
+void print_type(type *ty, int num){
+    if(num == 0) return;
+    num--;
+    switch(ty->kind){
+        case NOTYPE:
+            fprintf(stderr, "NOTYPE");
+            break;
+        case VOID:
+            fprintf(stderr, "VOID");
+            break;
+        case CHAR:
+            fprintf(stderr, "CHAR");
+            break;
+        case INT:
+            fprintf(stderr, "INT");
+            break;
+        case PTR:
+            fprintf(stderr, "PTR -> ");
+            print_type(ty->ptr_to, num);
+            break;
+        case FUNC:
+            fprintf(stderr, "FUNC -> ");
+            print_type(ty->ptr_to, num);
+            break;
+        case STRUCT:
+            fprintf(stderr, "STRUCT { ");
+            for(symb *sy = ty->head; sy; sy = sy->next){
+                fprintf(stderr, "%.*s ", sy->len, sy->name);
+                print_type(sy->ty, num);
+                fprintf(stderr, ", ");
+            }
+            fprintf(stderr, "}");
+            break;
     }
 }
 
@@ -365,42 +397,6 @@ node *node_func_call(node *var){
         error(cur, "expected ',' or ')'");
     }
     return nd;
-}
-
-void print_type(type *ty, int num){
-    if(num == 0) return;
-    num--;
-    switch(ty->kind){
-        case NOTYPE:
-            fprintf(stderr, "NOTYPE");
-            break;
-        case VOID:
-            fprintf(stderr, "VOID");
-            break;
-        case CHAR:
-            fprintf(stderr, "CHAR");
-            break;
-        case INT:
-            fprintf(stderr, "INT");
-            break;
-        case PTR:
-            fprintf(stderr, "PTR -> ");
-            print_type(ty->ptr_to, num);
-            break;
-        case FUNC:
-            fprintf(stderr, "FUNC -> ");
-            print_type(ty->ptr_to, num);
-            break;
-        case STRUCT:
-            fprintf(stderr, "STRUCT { ");
-            for(symb *sy = ty->head; sy; sy = sy->next){
-                fprintf(stderr, "%.*s ", sy->len, sy->name);
-                print_type(sy->ty, num);
-                fprintf(stderr, ", ");
-            }
-            fprintf(stderr, "}");
-            break;
-    }
 }
 
 node *node_dot(node *var, token *id){
