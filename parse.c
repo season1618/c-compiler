@@ -153,8 +153,8 @@ void print_type(type *ty, int num){
     if(num == 0) return;
     num--;
     switch(ty->kind){
-        case NOTYPE:
-            fprintf(stderr, "NOTYPE");
+        case NOHEAD:
+            fprintf(stderr, "NOHEAD");
             break;
         case VOID:
             fprintf(stderr, "VOID");
@@ -250,6 +250,9 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
     nd->op2 = rhs;
 
     switch(kind){
+        case ND_COMMA:
+            nd->ty = rhs->ty;
+            break;
         case ND_ASSIGN:
             if(match_type(lhs->ty, rhs->ty) || lhs->ty->kind == PTR && rhs->ty->kind == ARRAY && match_type(lhs->ty->ptr_to, rhs->ty->ptr_to)){
                 nd->ty = lhs->ty;
@@ -388,7 +391,7 @@ node *node_func_call(node *var){
 
     node *arg;
     while(!expect(")")){
-        arg = expr();
+        arg = assign();
         arg->next = nd->head;
         nd->head = arg;
         nd->val++;
@@ -521,14 +524,14 @@ void dcl(){
 }
 
 symb *type_whole(symb *ident, type *base){
-    if(ident->ty->kind == NOTYPE){
+    if(ident->ty->kind == NOHEAD){
         ident->ty = base;
         return ident;
     }
     type *ty = ident->ty;
     while(ty->ptr_to){
         switch(ty->ptr_to->kind){
-            case NOTYPE:
+            case NOHEAD:
                 ty->ptr_to = base;
                 return ident;
             case VOID:
@@ -619,7 +622,7 @@ type *type_head(){
             return var->ty;
         }
     }
-    return type_base(NOTYPE);
+    return type_base(NOHEAD);
 }
 
 symb *type_ident(){
@@ -633,7 +636,7 @@ symb *type_ident(){
         ident = type_ident();
         if(!expect(")")) error(cur, "expect ')'");
     }else{
-        ident->ty = type_base(NOTYPE);
+        ident->ty = type_base(NOHEAD);
         if(cur->kind == TK_ID){
             ident->name = cur->str;
             ident->len = cur->len;
@@ -754,7 +757,11 @@ node *stmt(){
 }
 
 node *expr(){
-    return assign();
+    node *nd = assign();
+    while(expect(",")){
+        nd = node_binary(ND_COMMA, nd, assign());
+    }
+    return nd;
 }
 
 node *assign(){

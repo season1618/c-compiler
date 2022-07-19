@@ -264,6 +264,7 @@ void gen_expr(node *nd){
             break;
             
         // binary operation
+        case ND_COMMA:
         case ND_LOG_OR:
         case ND_LOG_AND:
         case ND_EQ:
@@ -364,6 +365,9 @@ void gen_binary(node *nd){
     printf("    pop rax\n");
     
     switch(nd->kind){
+        case ND_COMMA:
+            printf("    mov rax, rdi\n");
+            break;
         case ND_LOG_OR:
             printf("    cmp rax, 0\n");
             printf("    setne al\n");

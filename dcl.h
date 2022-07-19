@@ -12,7 +12,7 @@ typedef enum {
 } token_kind;
 
 typedef enum {
-    NOTYPE,
+    NOHEAD,
     VOID,
     CHAR,
     INT,
@@ -45,10 +45,9 @@ typedef enum {
     ND_BREAK,
     ND_RET,
 
-    // assignment
-    ND_ASSIGN,
-
     // binary operator
+    ND_COMMA,
+    ND_ASSIGN,
     ND_LOG_OR,
     ND_LOG_AND,
     ND_EQ,
