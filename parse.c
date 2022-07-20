@@ -402,7 +402,7 @@ node *node_func_call(node *var){
     return nd;
 }
 
-node *node_dot(node *var, token *id){
+node *node_dot(node *var, char *name, int len){
     if(var->ty->kind != STRUCT){
         error(cur, "type of variable is not a structure");
     }
@@ -410,13 +410,13 @@ node *node_dot(node *var, token *id){
     nd->kind = ND_DOT;
     nd->op1 = var;
     for(symb *memb = var->ty->head; memb; memb = memb->next){
-        if(id->len == memb->len && memcmp(id->str, memb->name, memb->len) == 0){
+        if(len == memb->len && memcmp(name, memb->name, memb->len) == 0){
             nd->ty = memb->ty;
             nd->offset = memb->offset;
             return nd;
         }
     }
-    error(id, "this struct has no member named this");
+    error(cur, "this struct has no member named this");
 }
 
 node *node_arrow(node *var, token *id){
@@ -505,21 +505,38 @@ node *init(node *lhs){
         
         int i = 0;
         while(!expect("}")){
-            if(i >= lhs->ty->size){
-                error(cur, "ecess elements in array initilizer");
-            }
+            if(i >= lhs->ty->size) error(cur, "excess elements in array initilizer");
+
             item->next = init(node_unary(ND_DEREF, node_binary(ND_ADD, lhs, node_num(type_base(INT), i))));
             item = item->next;
             
             i++;
             if(expect(",")) continue;
             if(expect("}")) break;
-            error(cur, "expect ','");
+            error(cur, "expect ',' or ';'");
         }
         nd->head = nd->head->next;
-    }else{
-        nd->head = node_binary(ND_ASSIGN, lhs, assign());
+        return nd;
     }
+    if(lhs->ty->kind == STRUCT){
+        if(!expect("{")) error(cur, "expect '{'");
+
+        symb *memb = lhs->ty->head;
+        while(!expect("}")){
+            if(!memb) error(cur, "excess elements in struct initilizer");
+
+            item->next = init(node_dot(lhs, memb->name, memb->len));
+            item = item->next;
+
+            memb = memb->next;
+            if(expect(",")) continue;
+            if(expect("}")) break;
+            error(cur, "expect ',' or ';'");
+        }
+        nd->head = nd->head->next;
+        return nd;
+    }
+    nd->head = node_binary(ND_ASSIGN, lhs, assign());
     return nd;
 }
 
@@ -1000,7 +1017,7 @@ node *primary(){
             continue;
         }
         if(expect(".")){
-            nd = node_dot(nd, cur);
+            nd = node_dot(nd, cur->str, cur->len);
             cur = cur->next;
             continue;
         }
