@@ -338,11 +338,11 @@ node *node_unary(node_kind kind, node *op){
     return nd;
 }
 
-node *node_var(token *id){
+node *node_var(char *name, int len){
     node *nd = calloc(1, sizeof(node));
 
     for(symb *var = local_head; var; var = var->next){
-        if(var->len == id->len && memcmp(var->name, id->str, var->len) == 0){
+        if(var->len == len && memcmp(var->name, name, var->len) == 0){
             nd->kind = ND_LOCAL;
             nd->ty = var->ty;
             nd->offset = var->offset;
@@ -350,15 +350,15 @@ node *node_var(token *id){
         }
     }
     for(symb *var = global_head; var; var = var->next){
-        if(var->len == id->len && memcmp(var->name, id->str, var->len) == 0){
+        if(var->len == len && memcmp(var->name, name, var->len) == 0){
             nd->kind = ND_GLOBAL;
             nd->ty = var->ty;
             nd->name = var->name;
-            nd->len = var->len;//fprintf(stderr, "%.*s\n", var->len, var->name);
+            nd->len = var->len;
             return nd;
         }
     }
-    error(id, "'%.*s' is undeclared", id->len, id->str);
+    error(cur, "this variable is undeclared");
 }
 
 node *node_num(type *ty, int val){
@@ -566,11 +566,7 @@ node *dcl(){
             if(var->name){
                 push_local(var);
                 if(expect("=")){
-                    node *lhs = calloc(1, sizeof(node));
-                    lhs->kind = ND_LOCAL;
-                    lhs->ty = local_head->ty;
-                    lhs->offset = local_head->offset;
-                    item->next = init(lhs);
+                    item->next = init(node_var(var->name, var->len));
                     item = item->next;
                 }
             }
@@ -980,7 +976,7 @@ node *primary(){
         if(!expect(")")) error(cur, "expect ')'");
     }
     else if(cur->kind == TK_ID){
-        nd = node_var(cur);
+        nd = node_var(cur->str, cur->len);
         cur = cur->next;
     }
     else if(cur->kind == TK_NUM){
