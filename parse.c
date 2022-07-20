@@ -13,7 +13,7 @@ symb *local_head;
 int lc_num = 0;
 
 void ext();
-void dcl();
+node *dcl();
 symb *type_whole();
 type *type_head();
 symb *type_ident();
@@ -354,7 +354,7 @@ node *node_var(token *id){
             nd->kind = ND_GLOBAL;
             nd->ty = var->ty;
             nd->name = var->name;
-            nd->len = var->len;
+            nd->len = var->len;//fprintf(stderr, "%.*s\n", var->len, var->name);
             return nd;
         }
     }
@@ -494,7 +494,40 @@ void ext(){
     }
 }
 
-void dcl(){
+node *init(node *lhs){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_BLOCK;
+    nd->head = calloc(1, sizeof(node));
+    node *item = nd->head;
+
+    if(lhs->ty->kind == ARRAY){
+        if(!expect("{")) error(cur, "expect '{'");
+        
+        int i = 0;
+        while(!expect("}")){
+            if(i >= lhs->ty->size){
+                error(cur, "ecess elements in array initilizer");
+            }
+            item->next = init(node_unary(ND_DEREF, node_binary(ND_ADD, lhs, node_num(type_base(INT), i))));
+            item = item->next;
+            
+            i++;
+            if(expect(",")) continue;
+            if(expect("}")) break;
+            error(cur, "expect ','");
+        }
+        nd->head = nd->head->next;
+    }else{
+        nd->head = node_binary(ND_ASSIGN, lhs, assign());
+    }
+    return nd;
+}
+
+node *dcl(){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_BLOCK;
+    nd->head = calloc(1, sizeof(node));
+    node *item = nd->head;
     // if(expect("typedef")){
     //     symb *var = type_ident();
     //     push_global(TYPE, var);
@@ -515,11 +548,22 @@ void dcl(){
 
             if(var->name){
                 push_local(var);
+                if(expect("=")){
+                    node *lhs = calloc(1, sizeof(node));
+                    lhs->kind = ND_LOCAL;
+                    lhs->ty = local_head->ty;
+                    lhs->offset = local_head->offset;
+                    item->next = init(lhs);
+                    item = item->next;
+                }
             }
+
             if(expect(",")) continue;
             if(expect(";")) break;
             error(cur, "expected ';'");
         }
+        nd->head = nd->head->next;
+        return nd;
     }
 }
 
@@ -686,7 +730,8 @@ node *stmt(){
         node *elm = nd->head;
         while(!expect("}")){
             if(find_type()){
-                dcl();
+                elm->next = dcl();
+                elm = elm->next;
             }else{
                 elm->next = stmt();
                 elm = elm->next;
