@@ -233,13 +233,13 @@ void push_local(symb *sy){
     local_head = var;
 }
 
-node *node_global_def(symb *var){
+node *node_global_def(symb *var, node *init){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_GLOBAL_DEF;
     nd->ty = var->ty;
     nd->name = var->name;
     nd->len = var->len;
-    nd->offset = size_of(var->ty);
+    nd->head = init;
     return nd;
 }
 
@@ -447,6 +447,10 @@ node *program(token *token_head){
     return node_head->next;
 }
 
+node *alloc_data();
+node *initialize();
+node *initializer();
+
 void ext(){
     if(expect("typedef")){
         symb *var = type_ident();
@@ -484,7 +488,9 @@ void ext(){
             if(var->name){
                 push_global(VAR, var);
                 if(var->ty->kind != FUNC){
-                    push_ext(node_global_def(var));
+                    node *init = node_num(type_base(INT), 0);
+                    // if(expect("=")) init = initializer();
+                    push_ext(initialize(var, init));
                 }
             }
             if(expect(",")) continue;
@@ -492,6 +498,69 @@ void ext(){
             error(cur, "expected ';'");
         }
     }
+}
+
+node *alloc_data(type *ty, int val){
+    node *nd = calloc(1, sizeof(node));
+    nd->ty = ty;
+    nd->val = val;
+    return nd;
+}
+node *initialize(symb *var, node *init){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_GLOBAL_DEF;
+    nd->ty = var->ty;
+    nd->name = var->name;
+    nd->len = var->len;
+    nd->head = init;
+    return nd;
+    // if(var->ty->kind == ARRAY){
+    //     int i = 0;
+    //     for(node *item = init->head; item; item = item->next){
+    //         if(i >= var->ty->size) error(cur, "excess elements in array initilizer");
+    //         node *el = initialize(node_unary(ND_DEREF, node_binary(ND_ADD, var, node_num(type_base(INT), i))), item);
+    //         for(el = el->head; el; el = el->next){
+    //             item->next = el;
+    //             item = item->next;
+    //         }
+    //         i++;
+    //     }
+    //     item->next = alloc_data(size_of(var->ty->ptr_to) * (var->ty->size - i), 0);
+    //     nd->head = nd->head->next;
+    //     return nd;
+    // }
+    
+    // if(init->kind == ND_NUM){
+    //     nd->head = calloc(1, sizeof(node));
+    //     nd->head->ty = init->ty;
+    //     nd->head->val = init->val;
+    //     return nd;
+    // }
+    // if(init->kind == ND_STRING){
+    //     nd->head = calloc(1, sizeof(node));
+    //     nd->head->ty = init->ty;
+    //     nd->head->offset = init->offset;
+    //     return nd;
+    // }
+}
+
+node *initializer(){
+    node *nd = calloc(1, sizeof(node));
+    // if(expect("{")){
+    //     nd->head = calloc(1, sizeof(node));
+    //     node *item = nd->head;
+    //     while(!expect("}")){
+    //         item->next = initializer();
+    //         item = item->next;
+
+    //         if(expect(",")) continue;
+    //         if(expect(";")) break;
+    //         error(cur, "expect ',' or ';'");
+    //     }
+    //     nd->head = nd->head->next;
+    //     return nd;
+    // }
+    return assign();
 }
 
 node *init(node *lhs){

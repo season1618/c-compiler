@@ -129,6 +129,7 @@ struct block {
     int end;
 };
 
+extern int size_of();
 extern void error();
 extern token *tokenize();
 extern node *program();

@@ -89,6 +89,50 @@ void gen_code(node *node_head){
     }    
 }
 
+void gen_alloc(type *ty, node *init){
+    switch(ty->kind){
+        case CHAR:
+            if(init->val == 0) printf("    .zero 1\n");
+            else printf("    .byte %d\n", init->val);
+            break;
+        case INT:
+            if(init->val == 0) printf("    .zero 4\n");
+            else printf("    .long %d\n", init->val);
+            break;
+        case PTR:
+            if(init->kind == ND_ADR) printf("    .quad %.*s\n", init->op1->len, init->op1->name);
+            else if(init->kind == ND_STRING) printf("    .quad .LC%d\n", init->offset);
+            break;
+        case ARRAY:
+            if(ty->ptr_to->kind == CHAR && init->head){
+                printf("    .string %.*s\n", init->len, init->name);
+                break;
+            }
+            int i = 0;
+            for(node *item = init->head; item; item = item->next){
+                if(i >= ty->size) fprintf(stderr, "excess elements in array initilizer");
+                gen_alloc(ty->ptr_to, item);
+                i++;
+            }
+            int rest = size_of(ty->ptr_to) * (ty->size - i);
+            if(rest) printf("    .zero %d\n", rest);
+            break;
+        case STRUCT:{
+            int offset = 0;
+            symb *memb = ty->head;
+            node *item = init->head;
+            for(; memb && item; memb = memb->next, item = item->next){
+                if(offset < memb->offset){
+                    printf("    .zero %d\n", memb->offset - offset);
+                    offset = memb->offset;
+                }
+                gen_alloc(memb->ty, item);
+            }
+            if(offset < size_of(ty)) printf("    .zero %d\n", size_of(ty) - offset);
+            break;
+        }
+    }
+}
 void gen_ext(node *nd){
     switch(nd->kind){
         case ND_FUNC_DEF:{
@@ -128,7 +172,9 @@ void gen_ext(node *nd){
         case ND_GLOBAL_DEF:
             printf(".data\n");
             printf("%.*s:\n", nd->len, nd->name);
-            printf("    .zero %d\n", nd->offset);
+            gen_alloc(nd->ty, nd->head);
+            
+            // printf("    .zero %d\n", nd->offset);
             break;
         case ND_LOCAL_CONST:
             printf(".data\n");
