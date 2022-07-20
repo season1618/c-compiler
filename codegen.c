@@ -45,30 +45,30 @@ char *int_arg_register(int ord, int size){
     }
 }
 
-void mov_register_to_memory(char *dest, char *src[4], type *ty){
+void mov_memory_from_register(char *dest[4], char *src[4], type *ty){
     switch(ty->kind){
         case CHAR:
-            printf("    mov BYTE PTR [%s], %s\n", dest, src[0]);
+            printf("    mov BYTE PTR [%s], %s\n", dest[3], src[0]);
             break;
         case INT:
-            printf("    mov DWORD PTR [%s], %s\n", dest, src[2]);
+            printf("    mov DWORD PTR [%s], %s\n", dest[3], src[2]);
             break;
         case PTR:
-            printf("    mov QWORD PTR [%s], %s\n", dest, src[3]);
+            printf("    mov QWORD PTR [%s], %s\n", dest[3], src[3]);
             break;
     }
 }
 
-void mov_memory_to_register(char *dest[4], char *src, type *ty){
+void mov_register_from_memory(char *dest[4], char *src[4], type *ty){
     switch(ty->kind){
         case CHAR:
-            printf("    movsx %s, BYTE PTR [%s]\n", dest[3], src);
+            printf("    movsx %s, BYTE PTR [%s]\n", dest[3], src[3]);
             break;
         case INT:
-            printf("    movsx %s, DWORD PTR [%s]\n", dest[3], src);
+            printf("    movsx %s, DWORD PTR [%s]\n", dest[3], src[3]);
             break;
         case PTR:
-            printf("    mov %s, QWORD PTR [%s]\n", dest[3], src);
+            printf("    mov %s, QWORD PTR [%s]\n", dest[3], src[3]);
             break;
     }
 }
@@ -106,14 +106,14 @@ void gen_ext(node *nd){
                 if(num_param_int < 6){
                     printf("    mov rax, rbp\n");
                     printf("    sub rax, %d\n", param->offset);
-                    mov_register_to_memory("rax", int_arg_reg[num_param_int], param->ty);
+                    mov_memory_from_register(rax, int_arg_reg[num_param_int], param->ty);
                 }else{
                     printf("    mov rax, rbp\n");
                     printf("    sub rax, %d\n", param->offset);
                     printf("    mov rbx, rbp\n");
                     printf("    add rbx, %d\n", 8 * (num_param_int - 4));
                     printf("    mov rbx, [rbx]\n");
-                    mov_register_to_memory("rax", rbx, param->ty);
+                    mov_memory_from_register(rax, rbx, param->ty);
                 }
                 num_param_int++;
             }
@@ -275,7 +275,6 @@ void gen_stmt(node *nd){
                     return;
                 }
             }
-            // error(cur, "continue statement not within a loop");
             fprintf(stderr, "continue statement not within a loop");
             return;
         case ND_BREAK:
@@ -283,7 +282,6 @@ void gen_stmt(node *nd){
                 printf("    jmp .L%d\n", block_top->end);
                 return;
             }
-            // error(cur, "break statement not within loop or switch");
             fprintf(stderr, "continue statement not within a loop or switch");
             return;
         case ND_RET:
@@ -308,7 +306,7 @@ void gen_expr(node *nd){
 
             printf("    pop rdi\n");
             printf("    pop rax\n");
-            mov_register_to_memory("rax", rdi, nd->ty);
+            mov_memory_from_register(rax, rdi, nd->ty);
             printf("    push rdi\n");
             break;
             
@@ -517,14 +515,14 @@ void gen_rval(node *nd){
                 case CHAR:
                 case INT:
                 case PTR:
-                    mov_memory_to_register(rax, "rax", nd->ty);
+                    mov_register_from_memory(rax, rax, nd->ty);
                     break;
             }
             break;
         case ND_DEREF:
         case ND_DOT:
         case ND_ARROW:
-            mov_memory_to_register(rax, "rax", nd->ty);
+            mov_register_from_memory(rax, rax, nd->ty);
             break;
     }
     printf("    push rax\n");
