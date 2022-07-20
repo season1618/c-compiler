@@ -17,6 +17,8 @@ node *dcl();
 symb *type_whole();
 type *type_head();
 symb *type_ident();
+node *init_local();
+node *initializer();
 node *stmt();
 node *expr();
 node *assign();
@@ -449,8 +451,6 @@ node *program(token *token_head){
     return node_head->next;
 }
 
-node *initializer();
-
 void ext(){
     if(expect("typedef")){
         symb *var = type_ident();
@@ -500,71 +500,6 @@ void ext(){
     }
 }
 
-node *initializer(){
-    if(expect("{")){
-        node *nd = calloc(1, sizeof(node));
-        nd->head = calloc(1, sizeof(node));
-        node *item = nd->head;
-        while(!expect("}")){
-            item->next = initializer();
-            item = item->next;
-
-            if(expect(",")) continue;
-            if(expect("}")) break;
-            error(cur, "expect ',' or '}'");
-        }
-        nd->head = nd->head->next;
-        return nd;
-    }
-    return assign();
-}
-
-node *init(node *lhs){
-    node *nd = calloc(1, sizeof(node));
-    nd->kind = ND_BLOCK;
-    nd->head = calloc(1, sizeof(node));
-    node *item = nd->head;
-
-    if(lhs->ty->kind == ARRAY){
-        if(!expect("{")) error(cur, "expect '{'");
-        
-        int i = 0;
-        while(!expect("}")){
-            if(i >= lhs->ty->size) error(cur, "excess elements in array initilizer");
-
-            item->next = init(node_unary(ND_DEREF, node_binary(ND_ADD, lhs, node_num(type_base(INT), i))));
-            item = item->next;
-            
-            i++;
-            if(expect(",")) continue;
-            if(expect("}")) break;
-            error(cur, "expect ',' or ';'");
-        }
-        nd->head = nd->head->next;
-        return nd;
-    }
-    if(lhs->ty->kind == STRUCT){
-        if(!expect("{")) error(cur, "expect '{'");
-
-        symb *memb = lhs->ty->head;
-        while(!expect("}")){
-            if(!memb) error(cur, "excess elements in struct initilizer");
-
-            item->next = init(node_dot(lhs, memb->name, memb->len));
-            item = item->next;
-
-            memb = memb->next;
-            if(expect(",")) continue;
-            if(expect("}")) break;
-            error(cur, "expect ',' or ';'");
-        }
-        nd->head = nd->head->next;
-        return nd;
-    }
-    nd->head = node_binary(ND_ASSIGN, lhs, assign());
-    return nd;
-}
-
 node *dcl(){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_BLOCK;
@@ -591,7 +526,7 @@ node *dcl(){
             if(var->name){
                 push_local(var);
                 if(expect("=")){
-                    item->next = init(node_var(var->name, var->len));
+                    item->next = init_local(node_var(var->name, var->len), initializer());
                     item = item->next;
                 }
             }
@@ -760,21 +695,72 @@ symb *type_ident(){
     return type_whole(ident, base);
 }
 
+node *init_local(node *var, node *init){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_BLOCK;
+    nd->head = calloc(1, sizeof(node));
+    node *st = nd->head;
+
+    if(var->ty->kind == ARRAY){
+        int i = 0;
+        for(node *item = init->head; item; item = item->next){
+            if(i >= var->ty->size) error(cur, "excess elements in array initilizer");
+
+            st->next = init_local(node_unary(ND_DEREF, node_binary(ND_ADD, var, node_num(type_base(INT), i))), item);
+            st = st->next;
+
+            i++;
+        }
+        nd->head = nd->head->next;
+        return nd;
+    }
+    if(var->ty->kind == STRUCT){
+        symb *memb = var->ty->head;
+        for(node *item = init->head; item; item = item->next){
+            if(!memb) error(cur, "excess elements in struct initilizer");
+
+            st->next = init_local(node_dot(var, memb->name, memb->len), item);
+            st = st->next;
+
+            memb = memb->next;
+        }
+        nd->head = nd->head->next;
+        return nd;
+    }
+    nd->head = node_binary(ND_ASSIGN, var, init);
+    return nd;
+}
+
+node *initializer(){
+    if(expect("{")){
+        node *nd = calloc(1, sizeof(node));
+        nd->head = calloc(1, sizeof(node));
+        node *item = nd->head;
+        while(!expect("}")){
+            item->next = initializer();
+            item = item->next;
+
+            if(expect(",")) continue;
+            if(expect("}")) break;
+            error(cur, "expect ',' or '}'");
+        }
+        nd->head = nd->head->next;
+        return nd;
+    }
+    return assign();
+}
+
 node *stmt(){
     node *nd = calloc(1, sizeof(node));
     
     if(expect("{")){
         nd->kind = ND_BLOCK;
         nd->head = calloc(1, sizeof(node));
-        node *elm = nd->head;
+        node *item = nd->head;
         while(!expect("}")){
-            if(find_type()){
-                elm->next = dcl();
-                elm = elm->next;
-            }else{
-                elm->next = stmt();
-                elm = elm->next;
-            }
+            if(find_type()) item->next = dcl();
+            else item->next = stmt();
+            item = item->next;
         }
         nd->head = nd->head->next;
     }
