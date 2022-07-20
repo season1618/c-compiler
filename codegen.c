@@ -90,6 +90,10 @@ void gen_code(node *node_head){
 }
 
 void gen_alloc(type *ty, node *init){
+    if(init == NULL){
+        printf("    .zero %d\n", size_of(ty));
+        return;
+    }
     switch(ty->kind){
         case CHAR:
             if(init->val == 0) printf("    .zero 1\n");
@@ -104,7 +108,7 @@ void gen_alloc(type *ty, node *init){
             else if(init->kind == ND_STRING) printf("    .quad .LC%d\n", init->offset);
             break;
         case ARRAY:
-            if(ty->ptr_to->kind == CHAR && init->head){
+            if(ty->ptr_to->kind == CHAR && init->kind == ND_STRING){
                 printf("    .string %.*s\n", init->len, init->name);
                 break;
             }
@@ -121,12 +125,11 @@ void gen_alloc(type *ty, node *init){
             int offset = 0;
             symb *memb = ty->head;
             node *item = init->head;
-            for(; memb && item; memb = memb->next, item = item->next){
-                if(offset < memb->offset){
-                    printf("    .zero %d\n", memb->offset - offset);
-                    offset = memb->offset;
-                }
+            for(; item; memb = memb->next, item = item->next){
+                if(!memb) fprintf(stderr, "excess elements in struct initilizer");
+                if(offset < memb->offset) printf("    .zero %d\n", memb->offset - offset);
                 gen_alloc(memb->ty, item);
+                offset = memb->offset + size_of(memb->ty);
             }
             if(offset < size_of(ty)) printf("    .zero %d\n", size_of(ty) - offset);
             break;

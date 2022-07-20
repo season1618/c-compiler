@@ -373,6 +373,8 @@ node *node_string(){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_STRING;
     nd->ty = type_ptr(type_base(CHAR));
+    nd->name = cur->str;
+    nd->len = cur->len;
     nd->offset = lc_num;
 
     cur = cur->next;
@@ -488,8 +490,8 @@ void ext(){
             if(var->name){
                 push_global(VAR, var);
                 if(var->ty->kind != FUNC){
-                    node *init = node_num(type_base(INT), 0);
-                    // if(expect("=")) init = initializer();
+                    node *init;
+                    if(expect("=")) init = initializer();
                     push_ext(initialize(var, init));
                 }
             }
@@ -545,21 +547,21 @@ node *initialize(symb *var, node *init){
 }
 
 node *initializer(){
-    node *nd = calloc(1, sizeof(node));
-    // if(expect("{")){
-    //     nd->head = calloc(1, sizeof(node));
-    //     node *item = nd->head;
-    //     while(!expect("}")){
-    //         item->next = initializer();
-    //         item = item->next;
+    if(expect("{")){
+        node *nd = calloc(1, sizeof(node));
+        nd->head = calloc(1, sizeof(node));
+        node *item = nd->head;
+        while(!expect("}")){
+            item->next = initializer();
+            item = item->next;
 
-    //         if(expect(",")) continue;
-    //         if(expect(";")) break;
-    //         error(cur, "expect ',' or ';'");
-    //     }
-    //     nd->head = nd->head->next;
-    //     return nd;
-    // }
+            if(expect(",")) continue;
+            if(expect("}")) break;
+            error(cur, "expect ',' or '}'");
+        }
+        nd->head = nd->head->next;
+        return nd;
+    }
     return assign();
 }
 
