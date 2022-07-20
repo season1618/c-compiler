@@ -74,6 +74,7 @@ void mov_memory_to_register(char *dest[4], char *src, type *ty){
 }
 
 void gen_ext();
+void gen_alloc();
 void gen_stmt();
 void gen_expr();
 void gen_binary();
@@ -89,8 +90,57 @@ void gen_code(node *node_head){
     }    
 }
 
+void gen_ext(node *nd){
+    switch(nd->kind){
+        case ND_FUNC_DEF:{
+            printf(".text\n");
+            printf("%.*s:\n", nd->len, nd->name);
+            
+            printf("    push rbp\n");
+            printf("    mov rbp, rsp\n");
+            printf("    sub rsp, %d\n", (nd->offset + 15)/16 * 16); // region of local variables
+
+            // move arguments from registers or the stack on the rbp to the stack under rbp.
+            int num_param_int = 0;
+            for(symb *param = nd->ty->head; param; param = param->next){
+                if(num_param_int < 6){
+                    printf("    mov rax, rbp\n");
+                    printf("    sub rax, %d\n", param->offset);
+                    mov_register_to_memory("rax", int_arg_reg[num_param_int], param->ty);
+                }else{
+                    printf("    mov rax, rbp\n");
+                    printf("    sub rax, %d\n", param->offset);
+                    printf("    mov rbx, rbp\n");
+                    printf("    add rbx, %d\n", 8 * (num_param_int - 4));
+                    printf("    mov rbx, [rbx]\n");
+                    mov_register_to_memory("rax", rbx, param->ty);
+                }
+                num_param_int++;
+            }
+
+            gen_stmt(nd->op1);
+
+            printf("    mov rsp, rbp\n");
+            printf("    pop rbp\n");
+            printf("    ret\n");
+
+            break;
+        }
+        case ND_GLOBAL_DEF:
+            printf(".data\n");
+            printf("%.*s:\n", nd->len, nd->name);
+            gen_alloc(nd->ty, nd->head);
+            break;
+        case ND_LOCAL_CONST:
+            printf(".data\n");
+            printf(".LC%d:\n", nd->offset);
+            printf("    .string %.*s\n", nd->len, nd->name);
+            break;
+    }
+}
+
 void gen_alloc(type *ty, node *init){
-    if(init == NULL){
+    if(!init){
         printf("    .zero %d\n", size_of(ty));
         return;
     }
@@ -134,56 +184,6 @@ void gen_alloc(type *ty, node *init){
             if(offset < size_of(ty)) printf("    .zero %d\n", size_of(ty) - offset);
             break;
         }
-    }
-}
-void gen_ext(node *nd){
-    switch(nd->kind){
-        case ND_FUNC_DEF:{
-            printf(".text\n");
-            printf("%.*s:\n", nd->len, nd->name);
-            
-            printf("    push rbp\n");
-            printf("    mov rbp, rsp\n");
-            printf("    sub rsp, %d\n", (nd->offset + 15)/16 * 16); // region of local variables
-
-            // move arguments from registers or the stack on the rbp to the stack under rbp.
-            int num_param_int = 0;
-            for(symb *param = nd->ty->head; param; param = param->next){
-                if(num_param_int < 6){
-                    printf("    mov rax, rbp\n");
-                    printf("    sub rax, %d\n", param->offset);
-                    mov_register_to_memory("rax", int_arg_reg[num_param_int], param->ty);
-                }else{
-                    printf("    mov rax, rbp\n");
-                    printf("    sub rax, %d\n", param->offset);
-                    printf("    mov rbx, rbp\n");
-                    printf("    add rbx, %d\n", 8 * (num_param_int - 4));
-                    printf("    mov rbx, [rbx]\n");
-                    mov_register_to_memory("rax", rbx, param->ty);
-                }
-                num_param_int++;
-            }
-
-            gen_stmt(nd->op1);
-
-            printf("    mov rsp, rbp\n");
-            printf("    pop rbp\n");
-            printf("    ret\n");
-
-            break;
-        }
-        case ND_GLOBAL_DEF:
-            printf(".data\n");
-            printf("%.*s:\n", nd->len, nd->name);
-            gen_alloc(nd->ty, nd->head);
-            
-            // printf("    .zero %d\n", nd->offset);
-            break;
-        case ND_LOCAL_CONST:
-            printf(".data\n");
-            printf(".LC%d:\n", nd->offset);
-            printf("    .string %.*s\n", nd->len, nd->name);
-            break;
     }
 }
 
