@@ -1,9 +1,8 @@
 #include<stdbool.h>
 
 typedef enum {
-    TK_KEYWORD,
+    TK_RESERVED,
     TK_TYPE,
-    TK_PUNCT,
     TK_ID,
     TK_NUM,
     TK_CHAR,
