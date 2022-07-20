@@ -612,7 +612,8 @@ type *type_head(){
             cur = cur->next;
         }
         if(expect("{")){
-            symb *member_head;
+            ty->head = calloc(1, sizeof(symb));
+            symb *item = ty->head;
             int offset = 0;
             int align = 0;
             while(!expect("}")){
@@ -620,18 +621,18 @@ type *type_head(){
                 while(true){
                     symb *var = type_ident();
                     var = type_whole(var, head);
-                    var->next = member_head;
                     var->offset = (offset + align_of(var->ty) - 1) / align_of(var->ty) * align_of(var->ty);
+                    item->next = var;
+                    item = item->next;
                     offset = var->offset + size_of(var->ty);
                     if(align < align_of(var->ty)) align = align_of(var->ty);
-                    member_head = var;
 
                     if(expect(",")) continue;
                     if(expect(";")) break;
                     error(cur, "expect ';'");
                 }
             }
-            ty->head = member_head;
+            ty->head = ty->head->next;
             ty->size = (offset + align - 1) / align * align;
             ty->align = align;
         }
