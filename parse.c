@@ -7,6 +7,7 @@
 
 token *cur;
 node *node_head, *node_tail;
+node *switch_head;
 symb *tag_head;
 symb *global_head;
 symb *local_head;
@@ -774,9 +775,35 @@ node *stmt(){
 
         nd->op2 = stmt();
 
-        if(expect("else")){
-            nd->op3 = stmt();
-        }
+        if(expect("else")) nd->op3 = stmt();
+    }
+    else if(expect("switch")){
+        if(!expect("(")) error(cur, "expected '('");
+
+        nd->kind = ND_SWITCH;
+        nd->op1 = expr();
+        nd->val = 0;
+        nd->next = switch_head;
+        switch_head = nd;
+
+        if(!expect(")")) error(cur, "expected ')'");
+
+        nd->op2 = stmt();
+        switch_head = switch_head->next;
+    }
+    else if(expect("case")){
+        nd->kind = ND_CASE;
+        nd->op1 = switch_head;
+        nd->offset = switch_head->val;
+        
+        node *con = primary();
+        con->next = switch_head->head;
+        switch_head->head = con;
+        switch_head->val++;
+
+        if(!expect(":")) error(cur, "expected ':'");
+
+        nd->op2 = stmt();
     }
     else if(expect("while")){
         if(!expect("(")) error(cur, "expected '('");

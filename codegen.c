@@ -225,6 +225,34 @@ void gen_stmt(node *nd){
                 printf(".L%d:\n", l1);
             }
             return;
+        case ND_SWITCH:
+            nd->offset = label_num;
+            int label_begin = label_num;
+            int label_default = label_num + nd->val;
+            int label_end = label_num + nd->val + 1;
+            push_block(ND_SWITCH, -1, label_end);
+            label_num += nd->val + 2;
+
+            int i = label_begin + nd->val - 1;
+            for(node *con = nd->head; con; con = con->next){
+                gen_expr(nd->op1);
+                gen_expr(con);
+                printf("    pop rdi\n");
+                printf("    pop rax\n");
+                printf("    cmp rax, rdi\n");
+                printf("    je .L%d\n", i);
+                i--;
+            }
+            // printf("    jmp .L%d\n", label_default);
+            
+            gen_stmt(nd->op2);
+
+            printf(".L%d:\n", label_end);
+            return;
+        case ND_CASE:
+            printf(".L%d:\n", nd->op1->offset + nd->offset);
+            gen_stmt(nd->op2);
+            return;
         case ND_WHILE:
             l1 = label_num;
             l2 = label_num + 1;

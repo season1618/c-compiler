@@ -38,6 +38,8 @@ typedef enum {
     ND_BLOCK,
     ND_IF,
     ND_SWITCH,
+    ND_CASE,
+    ND_DEFAULT,
     ND_WHILE,
     ND_FOR,
     ND_CONTINUE,
