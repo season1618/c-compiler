@@ -278,8 +278,7 @@ void gen_stmt(node *nd){
             label_num += 2;
             push_block(ND_FOR, l1, l2);
 
-            gen_expr(nd->op1);
-            printf("    pop rax\n");
+            gen_stmt(nd->op1);
 
             printf(".L%d:\n", l1);
 

@@ -819,9 +819,12 @@ node *stmt(){
         if(!expect("(")) error(cur, "expected '('");
 
         nd->kind = ND_FOR;
-        nd->op1 = expr();
-
-        if(!expect(";")) error(cur, "expected ';'");
+        if(cur->kind == TK_TYPE){
+            nd->op1 = dcl();
+        }else{
+            nd->op1 = expr();
+            if(!expect(";")) error(cur, "expected ';'");
+        }
 
         nd->op2 = expr();
 
