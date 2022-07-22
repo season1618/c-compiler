@@ -651,9 +651,22 @@ symb *type_ident(){
     }
 
     symb *ident = calloc(1, sizeof(symb));
-    if(expect("(")){
-        ident = type_ident();
-        if(!expect(")")) error(cur, "expect ')'");
+    if(cur->str[0] == '('){
+        bool is_nest = true;
+        if(cur->next->kind == TK_TYPE) is_nest = false;
+        for(symb *var = global_head; var; var = var->next){
+            if(var->kind == TYPE && cur->next->len == var->len && memcmp(cur->next->str, var->name, var->len) == 0){
+                is_nest = false;
+            }
+        }
+        
+        if(is_nest){
+            expect("(");
+            ident = type_ident();
+            if(!expect(")")) error(cur, "expect ')'");
+        }else{
+            ident->ty = type_base(NOHEAD);
+        }
     }else{
         ident->ty = type_base(NOHEAD);
         if(cur->kind == TK_ID){
@@ -681,7 +694,7 @@ symb *type_ident(){
                 param = param->next;
                 if(expect(",")) continue;
                 if(expect(")")) break;
-                error(cur, "expect ',' or ')'");
+                error(cur, "expected ',' or ')'");
             }
             ty->head = ty->head->next;
             base = ty;
@@ -1005,7 +1018,15 @@ node *unary(){
         return node_binary(ND_ASSIGN, nd, node_binary(ND_SUB, nd, node_num(type_base(INT), 1)));
     }
     if(expect("sizeof")){
-        return node_num(type_base(INT), size_of(unary()->ty));
+        if(expect("(")){
+            type *ty;
+            if(find_type()) ty = type_ident()->ty;
+            else ty = unary()->ty;
+            if(!expect(")")) error(cur, "expected ')'");
+            return node_num(type_base(INT), size_of(ty));
+        }else{
+            return node_num(type_base(INT), size_of(unary()->ty));
+        }
     }
     return primary();
 }
