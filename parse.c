@@ -91,7 +91,7 @@ bool find_type(){
         return true;
     }
     for(symb *var = global_head; var; var = var->next){
-        if(var->kind == TYPE && cur->len == var->len && memcmp(cur->str, var->name, var->len) == 0){
+        if(var->kind == SY_TYPE && cur->len == var->len && memcmp(cur->str, var->name, var->len) == 0){
             return true;
         }
     }
@@ -185,6 +185,9 @@ void print_type(type *ty, int num){
             }
             fprintf(stderr, "}");
             break;
+        case ENUM:
+            fprintf(stderr, "ENUM");
+            break;
     }
 }
 
@@ -204,7 +207,7 @@ void push_ext(node *nd){
 
 void push_tag(type *ty){
     symb *sy = calloc(1, sizeof(symb));
-    sy->kind = TAG;
+    sy->kind = SY_TAG;
     sy->next = tag_head;
     sy->ty = ty;
     sy->name = ty->name;
@@ -220,6 +223,18 @@ void push_global(symb_kind kind, symb *sy){
     var->ty = sy->ty;
     var->name = sy->name;
     var->len = sy->len;
+
+    global_head = var;
+}
+
+void push_enum(char *name, int len, int val){
+    symb *var = calloc(1, sizeof(symb));
+    var->kind = SY_ENUM;
+    var->next = global_head;
+    var->ty = type_base(ENUM);
+    var->name = name;
+    var->len = len;
+    var->val = val;
 
     global_head = var;
 }
@@ -341,29 +356,6 @@ node *node_unary(node_kind kind, node *op){
     return nd;
 }
 
-node *node_var(char *name, int len){
-    node *nd = calloc(1, sizeof(node));
-
-    for(symb *var = local_head; var; var = var->next){
-        if(var->len == len && memcmp(var->name, name, var->len) == 0){
-            nd->kind = ND_LOCAL;
-            nd->ty = var->ty;
-            nd->offset = var->offset;
-            return nd;
-        }
-    }
-    for(symb *var = global_head; var; var = var->next){
-        if(var->len == len && memcmp(var->name, name, var->len) == 0){
-            nd->kind = ND_GLOBAL;
-            nd->ty = var->ty;
-            nd->name = var->name;
-            nd->len = var->len;
-            return nd;
-        }
-    }
-    error(cur, "this variable is undeclared");
-}
-
 node *node_num(type *ty, int val){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_NUM;
@@ -384,6 +376,32 @@ node *node_string(){
     lc_num++;
 
     return nd;
+}
+
+node *node_var(char *name, int len){
+    node *nd = calloc(1, sizeof(node));
+
+    for(symb *var = local_head; var; var = var->next){
+        if(var->len == len && memcmp(var->name, name, var->len) == 0){
+            nd->kind = ND_LOCAL;
+            nd->ty = var->ty;
+            nd->offset = var->offset;
+            return nd;
+        }
+    }
+    for(symb *var = global_head; var; var = var->next){
+        if(var->len == len && memcmp(var->name, name, var->len) == 0){
+            if(var->ty->kind == ENUM){
+                return node_num(type_base(INT), var->val);
+            }
+            nd->kind = ND_GLOBAL;
+            nd->ty = var->ty;
+            nd->name = var->name;
+            nd->len = var->len;
+            return nd;
+        }
+    }
+    error(cur, "this variable is undeclared");
 }
 
 node *node_func_call(node *var){
@@ -455,7 +473,7 @@ node *program(token *token_head){
 void ext(){
     if(expect("typedef")){
         symb *var = type_ident();
-        push_global(TYPE, var);
+        push_global(SY_TYPE, var);
 
         if(!expect(";")) error(cur, "expected ';'");
         return;
@@ -467,7 +485,7 @@ void ext(){
             var = type_whole(var, head);
 
             if(var->ty->kind == FUNC && var->is_func_def){
-                push_global(VAR, var);
+                push_global(SY_VAR, var);
                 node *nd = calloc(1, sizeof(node));
                 nd->kind = ND_FUNC_DEF;
                 nd->ty = var->ty;
@@ -487,7 +505,7 @@ void ext(){
             }
 
             if(var->name){
-                push_global(VAR, var);
+                push_global(SY_VAR, var);
                 if(var->ty->kind != FUNC){
                     node *init = NULL;
                     if(expect("=")) init = initializer();
@@ -619,16 +637,47 @@ type *type_head(){
                         tag->ty->size = ty->size;
                         tag->ty->align = ty->align;
                     }
-                    return tag->ty;
+                    return type_base(INT);
                 }
             }
             push_tag(ty);
         }
-        return ty;
+        return type_base(INT);
+    }
+    if(expect("enum")){
+        type *ty = calloc(1, sizeof(type));
+        ty->kind = ENUM;
+        
+        if(cur->kind == TK_ID){
+            ty->name = cur->str;
+            ty->len = cur->len;
+            cur = cur->next;
+        }
+        if(expect("{")){
+            int i = 0;
+            while(!expect("}")){
+                push_enum(cur->str, cur->len, i);
+                cur = cur->next;
+                i++;
+                if(expect(",")) continue;
+                if(expect("}")) break;
+                error(cur, "expected ',' or '}'");
+            }
+        }
+
+        if(ty->name){
+            for(symb *tag = tag_head; tag; tag = tag->next){
+                if(ty->len == tag->len && memcmp(ty->name, tag->name, tag->len) == 0){
+                    return type_base(INT);
+                }
+            }
+            push_tag(ty);
+        }
+        return type_base(INT);
     }
 
     for(symb *var = global_head; var; var = var->next){
-        if(var->kind == TYPE && cur->len == var->len && memcmp(cur->str, var->name, var->len) == 0){
+        if(var->kind == SY_TYPE && cur->len == var->len && memcmp(cur->str, var->name, var->len) == 0){
             cur = cur->next;
             return var->ty;
         }
@@ -647,7 +696,7 @@ symb *type_ident(){
         bool is_nest = true;
         if(cur->next->kind == TK_TYPE) is_nest = false;
         for(symb *var = global_head; var; var = var->next){
-            if(var->kind == TYPE && cur->next->len == var->len && memcmp(cur->next->str, var->name, var->len) == 0){
+            if(var->kind == SY_TYPE && cur->next->len == var->len && memcmp(cur->next->str, var->name, var->len) == 0){
                 is_nest = false;
             }
         }

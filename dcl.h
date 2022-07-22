@@ -23,9 +23,10 @@ typedef enum {
 } type_kind;
 
 typedef enum {
-    VAR,
-    TYPE,
-    TAG,
+    SY_VAR,
+    SY_ENUM,
+    SY_TYPE,
+    SY_TAG,
 } symb_kind;
 
 typedef enum {
@@ -108,6 +109,7 @@ struct symb {
     char *name;
     int len;
     int offset;
+    int val;
     bool is_func_def;
 };
 
