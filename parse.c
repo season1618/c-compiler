@@ -630,14 +630,6 @@ type *type_head(){
     for(symb *var = global_head; var; var = var->next){
         if(var->kind == TYPE && cur->len == var->len && memcmp(cur->str, var->name, var->len) == 0){
             cur = cur->next;
-            if(var->ty->len){
-                for(symb *tag = tag_head; tag; tag = tag->next){
-                    if(var->ty->len == tag->len && memcmp(var->ty->name, tag->name, tag->len) == 0){
-                        return tag->ty;
-                    }
-                }
-                error(cur, "undefined tag name");
-            }
             return var->ty;
         }
     }
