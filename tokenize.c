@@ -92,7 +92,7 @@ void next_char(){
         nxt->len++;
         break;
     }
-    
+
     if(nxt->len == 3){
         nxt->val = nxt->str[1];
     }
@@ -115,12 +115,21 @@ void next_string(){
     nxt->str = p;
     nxt->len = 1;
     p++;
-    while(*p != '\"'){
+    while(true){
+        if(*p == '\\'){
+            p += 2;
+            nxt->len += 2;
+            continue;
+        }
+        if(*p != '\"'){
+            p++;
+            nxt->len++;
+            continue;
+        }
         p++;
         nxt->len++;
+        break;
     }
-    p++;
-    nxt->len++;
 
     cur->next = nxt;
     cur = nxt;
