@@ -11,11 +11,16 @@ token *cur;
 int NUM_TYPE = 6;
 int NUM_KEYWORD = 11;
 int NUM_PUNCT = 34;
+int NUM_ESCAPE = 13;
 char *types[] = {"extern", "void", "char", "int", "struct", "enum"};
 char *keywords[] = {"typedef", "return", "if", "else", "switch", "case", "while", "for", "continue", "break", "sizeof"};
 char *puncts[] = {
     "+=", "-=", "*=", "/=", "%=", "||", "&&", "==", "!=", "<=", ">=", "->", "++", "--",
     "=", "<", ">", "+", "-", "*", "/", "%", "&", "!", ".", ":", ",", ";", "(", ")", "{", "}", "[", "]"
+};
+char escape[2][13] = {
+    { 'a',  'b',  'e',  'f',  'n',  'r',  't',  'v', '\\', '\'', '\"',  '?',  '0'},
+    {'\a', '\b', '\e', '\f', '\n', '\r', '\t', '\v', '\\', '\'', '\"', '\?', '\0'}
 };
 
 bool is_alpha(char c){
@@ -72,15 +77,32 @@ void next_char(){
     nxt->str = p;
     nxt->len = 1;
     p++;
-    while(*p != '\''){
+    while(true){
+        if(*p == '\\'){
+            p += 2;
+            nxt->len += 2;
+            continue;
+        }
+        if(*p != '\''){
+            p++;
+            nxt->len++;
+            continue;
+        }
         p++;
         nxt->len++;
+        break;
     }
-    p++;
-    nxt->len++;
-
-    if(nxt->len > 3){
-        error(cur, "multi character constant");
+    
+    if(nxt->len == 3){
+        nxt->val = nxt->str[1];
+    }
+    if(nxt->len == 4 && nxt->str[1] == '\\'){
+        for(int i = 0; i < NUM_ESCAPE; i++){
+            if(nxt->str[2] == escape[0][i]){
+                nxt->val = escape[1][i];
+                break;
+            }
+        }
     }
 
     cur->next = nxt;

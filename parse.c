@@ -1025,7 +1025,7 @@ node *primary(){
         cur = cur->next;
     }
     else if(cur->kind == TK_CHAR){
-        nd = node_num(type_base(CHAR), cur->str[1]);
+        nd = node_num(type_base(CHAR), cur->val);
         cur = cur->next;
     }
     else if(cur->kind == TK_STRING){
