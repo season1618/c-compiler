@@ -485,6 +485,16 @@ node *program(token *token_head){
 }
 
 void ext(){
+    if(expect("#")){
+        expect("include");
+        if(expect("<")){
+            cur = cur->next->next->next;
+            expect(">");
+        }else{
+            cur = cur->next;
+        }
+        return;
+    }
     if(expect("typedef")){
         symb *var = type_ident();
         push_global(SY_TYPE, var);

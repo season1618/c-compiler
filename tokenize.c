@@ -13,10 +13,10 @@ int NUM_KEYWORD = 11;
 int NUM_PUNCT = 34;
 int NUM_ESCAPE = 13;
 char *types[] = {"extern", "void", "char", "int", "struct", "enum"};
-char *keywords[] = {"typedef", "return", "if", "else", "switch", "case", "while", "for", "continue", "break", "sizeof"};
+char *keywords[] = {"include", "typedef", "return", "if", "else", "switch", "case", "while", "for", "continue", "break", "sizeof"};
 char *puncts[] = {
     "+=", "-=", "*=", "/=", "%=", "||", "&&", "==", "!=", "<=", ">=", "->", "++", "--",
-    "=", "<", ">", "+", "-", "*", "/", "%", "&", "!", ".", ":", ",", ";", "(", ")", "{", "}", "[", "]"
+    "#", "=", "<", ">", "+", "-", "*", "/", "%", "&", "!", ".", ":", ",", ";", "(", ")", "{", "}", "[", "]"
 };
 char escape[2][13] = {
     { 'a',  'b',  'e',  'f',  'n',  'r',  't',  'v', '\\', '\'', '\"',  '?',  '0'},
