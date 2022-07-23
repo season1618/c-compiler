@@ -70,6 +70,7 @@ bool match_type(type *t1, type *t2){
     }
     switch(t1->kind){
         case VOID:
+        case BOOL:
         case CHAR:
         case INT:
             return true;
@@ -86,6 +87,15 @@ bool match_type(type *t1, type *t2){
             if(!t1->name || !t2->name) return false;
             return t1->len == t2->len && memcmp(t1->name, t2->name, t1->len) == 0;
     }
+}
+
+bool castable(type *t1, type *t2){
+    if(t1->kind == BOOL || t1->kind == CHAR || t1->kind == INT){
+        if(t2->kind == BOOL || t2->kind == CHAR || t2->kind == INT){
+            return true;
+        }
+    }
+    return t1->kind == t2->kind;
 }
 
 bool find_type(){
@@ -121,6 +131,7 @@ void validate_type(type *ty){
 int size_of(type *ty){
     switch(ty->kind){
         case VOID:
+        case BOOL:
         case CHAR:
         case FUNC:
             return 1;
@@ -139,6 +150,7 @@ int size_of(type *ty){
 int align_of(type *ty){
     switch(ty->kind){
         case VOID:
+        case BOOL:
         case CHAR:
         case FUNC:
             return 1;
@@ -164,6 +176,8 @@ void print_type(type *ty, int num){
         case VOID:
             fprintf(stderr, "VOID");
             break;
+        case BOOL:
+            fprintf(stderr, "BOOL");
         case CHAR:
             fprintf(stderr, "CHAR");
             break;
@@ -286,7 +300,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             nd->ty = rhs->ty;
             break;
         case ND_ASSIGN:
-            if(match_type(lhs->ty, rhs->ty) || lhs->ty->kind == PTR && rhs->ty->kind == ARRAY && match_type(lhs->ty->ptr_to, rhs->ty->ptr_to)){
+            if(castable(lhs->ty, rhs->ty) || lhs->ty->kind == PTR && rhs->ty->kind == ARRAY && match_type(lhs->ty->ptr_to, rhs->ty->ptr_to)){
                 nd->ty = lhs->ty;
             }
             else{
@@ -297,7 +311,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_NEQ:
         case ND_LT:
         case ND_LEQ:
-            if(match_type(lhs->ty, rhs->ty)){
+            if(castable(lhs->ty, rhs->ty)){
                 nd->ty = type_base(INT);
             }else{
                 error(cur, "invalid operands to relational operator");
@@ -622,6 +636,9 @@ symb *type_whole(symb *ident, type *base){
 type *type_head(){
     if(expect("void")){
         return type_base(VOID);
+    }
+    if(expect("bool")){
+        return type_base(BOOL);
     }
     if(expect("char")){
         return type_base(CHAR);

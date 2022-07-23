@@ -13,6 +13,7 @@ typedef enum {
 typedef enum {
     NOHEAD,
     VOID,
+    BOOL,
     CHAR,
     INT,
     PTR,

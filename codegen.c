@@ -47,6 +47,7 @@ char *int_arg_register(int ord, int size){
 
 void mov_memory_from_register(char *dest[4], char *src[4], type *ty){
     switch(ty->kind){
+        case BOOL:
         case CHAR:
             printf("    mov BYTE PTR [%s], %s\n", dest[3], src[0]);
             break;
@@ -61,6 +62,7 @@ void mov_memory_from_register(char *dest[4], char *src[4], type *ty){
 
 void mov_register_from_memory(char *dest[4], char *src[4], type *ty){
     switch(ty->kind){
+        case BOOL:
         case CHAR:
             printf("    movsx %s, BYTE PTR [%s]\n", dest[3], src[3]);
             break;
@@ -539,6 +541,7 @@ void gen_rval(node *nd){
         case ND_GLOBAL:
         case ND_LOCAL:
             switch(nd->ty->kind){
+                case BOOL:
                 case CHAR:
                 case INT:
                 case PTR:
