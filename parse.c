@@ -217,6 +217,11 @@ void push_tag(type *ty){
 }
 
 void push_global(symb_kind kind, symb *sy){
+    for(symb *var = global_head; var; var = var->next){
+        if(sy->len == var->len && memcmp(sy->name, var->name, var->len) == 0){
+            error(cur, "this variable is already declared");
+        }
+    }
     symb *var = calloc(1, sizeof(symb));
     var->kind = kind;
     var->next = global_head;
@@ -240,6 +245,11 @@ void push_enum(char *name, int len, int val){
 }
 
 void push_local(symb *sy){
+    for(symb *var = local_head; var; var = var->next){
+        if(sy->len == var->len && memcmp(sy->name, var->name, var->len) == 0){
+            error(cur, "this variable is already declared");
+        }
+    }
     symb *var = calloc(1, sizeof(symb));
     var->next = local_head;
     var->ty = sy->ty;
