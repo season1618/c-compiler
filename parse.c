@@ -12,6 +12,8 @@ symb *tag_head;
 symb *global_head;
 symb *local_head;
 int lc_num = 0;
+int local_num;
+int max_offset;
 
 void ext();
 node *dcl();
@@ -259,6 +261,8 @@ void push_local(symb *sy){
     var->offset = (var->offset + align_of(sy->ty) - 1) / align_of(sy->ty) * align_of(sy->ty);
 
     local_head = var;
+    local_num++;
+    if(max_offset < var->offset) max_offset = var->offset;
 }
 
 node *node_global_def(symb *var, node *init){
@@ -503,12 +507,14 @@ void ext(){
                 nd->len = var->len;
                 
                 local_head = calloc(1, sizeof(symb));
+                local_num = 0;
+                max_offset = 0;
                 for(symb *param = var->ty->head; param; param = param->next){
                     push_local(param);
                     param->offset = local_head->offset;
                 }
                 nd->op1 = stmt();
-                nd->offset = local_head->offset;
+                nd->offset = max_offset;
                 
                 push_ext(nd);
                 return;
@@ -822,12 +828,16 @@ node *stmt(){
         nd->kind = ND_BLOCK;
         nd->head = calloc(1, sizeof(node));
         node *item = nd->head;
+        int num = local_num;
         while(!expect("}")){
             if(find_type()) item->next = dcl();
             else item->next = stmt();
             item = item->next;
         }
         nd->head = nd->head->next;
+        for(; local_num > num; local_num--){
+            local_head = local_head->next;
+        }
     }
     else if(expect("if")){
         if(!expect("(")) error(cur, "expected '('");
