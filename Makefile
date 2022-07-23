@@ -9,5 +9,5 @@ $(OBJS): dcl.h
 
 test: main test/test.c
 	./main test/test.c > tmp.s
-	$(CC) -o tmp tmp.s foo.c
+	$(CC) -o tmp tmp.s
 	./tmp

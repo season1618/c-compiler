@@ -415,6 +415,15 @@ node *node_var(char *name, int len){
             return nd;
         }
     }
+    // wip
+    symb *sy = calloc(1, sizeof(symb));
+    sy->ty = type_base(FUNC);
+    sy->ty->ptr_to = type_base(INT);
+    sy->name = name;
+    sy->len = len;
+    push_global(SY_VAR, sy);
+    return node_var(name, len);
+
     error(cur, "this variable is undeclared");
 }
 
