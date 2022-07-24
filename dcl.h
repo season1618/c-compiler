@@ -51,6 +51,7 @@ typedef enum {
     // binary operator
     ND_COMMA,
     ND_ASSIGN,
+    ND_COND,
     ND_LOG_OR,
     ND_LOG_AND,
     ND_EQ,

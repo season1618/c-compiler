@@ -338,6 +338,24 @@ void gen_expr(node *nd){
             mov_memory_from_register(rax, rdi, nd->ty);
             printf("    push rdi\n");
             break;
+        case ND_COND:;
+            int l1 = label_num;
+            int l2 = label_num + 1;
+            label_num += 2;
+
+            gen_expr(nd->op1);
+            printf("    pop rax\n");
+            printf("    cmp rax, 0\n");
+            printf("    je .L%d\n", l1);
+            
+            gen_expr(nd->op2);
+            printf("    jmp .L%d\n", l2);
+            
+            printf(".L%d:\n", l1);
+            gen_expr(nd->op3);
+            
+            printf(".L%d:\n", l2);
+            break;
             
         // binary operation
         case ND_COMMA:

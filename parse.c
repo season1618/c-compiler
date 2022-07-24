@@ -303,6 +303,17 @@ node *node_global_def(symb *var, node *init){
 
 node *node_num();
 
+node *node_cond(node *cond, node *lhs, node *rhs){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_COND;
+    nd->op1 = cond;
+    nd->op2 = lhs;
+    nd->op3 = rhs;
+    if(castable(lhs->ty, rhs->ty)) nd->ty = lhs->ty;
+    else error(cur, "invalid operands type to conditional operator");
+    return nd;
+}
+
 node *node_binary(node_kind kind, node *lhs, node *rhs){
     node *nd = calloc(1, sizeof(node));
     nd->kind = kind;
@@ -1052,6 +1063,12 @@ node *assign(){
 
 node *cond(){
     node *nd = log_or();
+    if(expect("?")){
+        node *lhs = expr();
+        if(!expect(":")) error(cur, "expected ':'");
+        node *rhs = cond();
+        nd = node_cond(nd, lhs, rhs);
+    }
     return nd;
 }
 
