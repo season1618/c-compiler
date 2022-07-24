@@ -361,6 +361,9 @@ void gen_expr(node *nd){
         case ND_COMMA:
         case ND_LOG_OR:
         case ND_LOG_AND:
+        case ND_BIT_OR:
+        case ND_BIT_XOR:
+        case ND_BIT_AND:
         case ND_EQ:
         case ND_NEQ:
         case ND_LT:
@@ -480,6 +483,15 @@ void gen_binary(node *nd){
             printf("    cmp rdi, 0\n");
             printf("    setne dil\n");
             printf("    movsx rdi, dil\n");
+            printf("    and rax, rdi\n");
+            break;
+        case ND_BIT_OR:
+            printf("    or rax, rdi\n");
+            break;
+        case ND_BIT_XOR:
+            printf("    xor rax, rdi\n");
+            break;
+        case ND_BIT_AND:
             printf("    and rax, rdi\n");
             break;
         case ND_EQ:

@@ -28,6 +28,9 @@ node *assign();
 node *cond();
 node *log_or();
 node *log_and();
+node *bit_or();
+node *bit_xor();
+node *bit_and();
 node *equal();
 node *relational();
 node *shift();
@@ -333,6 +336,21 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
                 error(cur, "invalid operands to assignment operator");
             }
             break;
+        case ND_LOG_OR:
+        case ND_LOG_AND:
+            if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+                nd->ty = type_base(INT);
+                break;
+            }
+            error(cur, "invalid operands to logical or/and operator");
+        case ND_BIT_OR:
+        case ND_BIT_XOR:
+        case ND_BIT_AND:
+            if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+                nd->ty = type_base(INT);
+                break;
+            }
+            error(cur, "invalid operands to bitwise or/xor/and operator");
         case ND_EQ:
         case ND_NEQ:
         case ND_LT:
@@ -550,6 +568,12 @@ int eval_const(node *nd){
             return lhs || rhs;
         case ND_LOG_AND:
             return lhs && rhs;
+        case ND_BIT_OR:
+            return lhs | rhs;
+        case ND_BIT_XOR:
+            return lhs ^ rhs;
+        case ND_BIT_AND:
+            return lhs & rhs;
         case ND_EQ:
             return lhs == rhs;
         case ND_NEQ:
@@ -1116,9 +1140,33 @@ node *log_or(){
 }
 
 node *log_and(){
-    node *nd = equal();
+    node *nd = bit_or();
     while(expect("&&")){
-        nd = node_binary(ND_LOG_AND, nd, equal());
+        nd = node_binary(ND_LOG_AND, nd, bit_or());
+    }
+    return nd;
+}
+
+node *bit_or(){
+    node *nd = bit_xor();
+    while(expect("|")){
+        nd = node_binary(ND_BIT_OR, nd, bit_xor());
+    }
+    return nd;
+}
+
+node *bit_xor(){
+    node *nd = bit_and();
+    while(expect("^")){
+        nd = node_binary(ND_BIT_XOR, nd, bit_and());
+    }
+    return nd;
+}
+
+node *bit_and(){
+    node *nd = equal();
+    while(expect("&")){
+        nd = node_binary(ND_BIT_AND, nd, equal());
     }
     return nd;
 }
