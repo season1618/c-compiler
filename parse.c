@@ -526,6 +526,7 @@ void ext(){
         return;
     }
     else{
+        bool is_extern = expect("extern");
         type *head = type_head();
         while(true){
             symb *var = type_ident();
@@ -555,7 +556,7 @@ void ext(){
 
             if(var->name){
                 push_global(SY_VAR, var);
-                if(var->ty->kind != FUNC){
+                if(var->ty->kind != FUNC && !is_extern){
                     node *init = NULL;
                     if(expect("=")) init = initializer();
                     push_ext(node_global_def(var, init));
