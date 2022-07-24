@@ -1005,7 +1005,10 @@ node *initializer(){
 node *stmt(){
     node *nd = calloc(1, sizeof(node));
     
-    if(expect("{")){
+    if(expect(";")){
+        nd->kind = ND_BLOCK;
+    }
+    else if(expect("{")){
         nd->kind = ND_BLOCK;
         nd->head = calloc(1, sizeof(node));
         node *item = nd->head;
