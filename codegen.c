@@ -20,17 +20,17 @@ void pop_block(){
     block_top = block_top->next;
 }
 
-char *rax[4] = {"al", "ax", "eax", "rax"};
-char *rbx[4] = {"bl", "bx", "ebx", "rbx"};
+char *rax_[4] = {"al", "ax", "eax", "rax"};
+char *rbx_[4] = {"bl", "bx", "ebx", "rbx"};
 
-char *rdi[4] = {"dil",  "di", "edi", "rdi"};
-char *rsi[4] = {"sil",  "si", "esi", "rsi"};
-char *rdx[4] = { "dl",  "dx", "edx", "rdx"};
-char *rcx[4] = { "cl",  "cx", "ecx", "rcx"};
-char  *r8[4] = {"r8b", "r8w", "r8d", "r8" };
-char  *r9[4] = {"r9b", "r9w", "r9d", "r9" };
+char *rdi_[4] = {"dil",  "di", "edi", "rdi"};
+char *rsi_[4] = {"sil",  "si", "esi", "rsi"};
+char *rdx_[4] = { "dl",  "dx", "edx", "rdx"};
+char *rcx_[4] = { "cl",  "cx", "ecx", "rcx"};
+char  *r8_[4] = {"r8b", "r8w", "r8d", "r8" };
+char  *r9_[4] = {"r9b", "r9w", "r9d", "r9" };
 
-char **int_arg_reg[6] = {rdi, rsi, rdx, rcx, r8, r9};
+char **int_arg_reg[6] = {rdi_, rsi_, rdx_, rcx_, r8_, r9_};
 
 char *int_arg_register(int ord, int size){
     switch(size){
@@ -108,14 +108,14 @@ void gen_ext(node *nd){
                 if(num_param_int < 6){
                     printf("    mov rax, rbp\n");
                     printf("    sub rax, %d\n", param->offset);
-                    mov_memory_from_register(rax, int_arg_reg[num_param_int], param->ty);
+                    mov_memory_from_register(rax_, int_arg_reg[num_param_int], param->ty);
                 }else{
                     printf("    mov rax, rbp\n");
                     printf("    sub rax, %d\n", param->offset);
                     printf("    mov rbx, rbp\n");
                     printf("    add rbx, %d\n", 8 * (num_param_int - 4));
                     printf("    mov rbx, [rbx]\n");
-                    mov_memory_from_register(rax, rbx, param->ty);
+                    mov_memory_from_register(rax_, rbx_, param->ty);
                 }
                 num_param_int++;
             }
@@ -335,7 +335,7 @@ void gen_expr(node *nd){
 
             printf("    pop rdi\n");
             printf("    pop rax\n");
-            mov_memory_from_register(rax, rdi, nd->ty);
+            mov_memory_from_register(rax_, rdi_, nd->ty);
             printf("    push rdi\n");
             break;
         case ND_COND:;
@@ -585,14 +585,14 @@ void gen_rval(node *nd){
                 case CHAR:
                 case INT:
                 case PTR:
-                    mov_register_from_memory(rax, rax, nd->ty);
+                    mov_register_from_memory(rax_, rax_, nd->ty);
                     break;
             }
             break;
         case ND_DEREF:
         case ND_DOT:
         case ND_ARROW:
-            mov_register_from_memory(rax, rax, nd->ty);
+            mov_register_from_memory(rax_, rax_, nd->ty);
             break;
     }
     printf("    push rax\n");
