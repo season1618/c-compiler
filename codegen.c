@@ -365,6 +365,8 @@ void gen_expr(node *nd){
         case ND_NEQ:
         case ND_LT:
         case ND_LEQ:
+        case ND_LSHIFT:
+        case ND_RSHIFT:
         case ND_ADD:
         case ND_SUB:
         case ND_MUL:
@@ -499,6 +501,14 @@ void gen_binary(node *nd){
             printf("    cmp rax, rdi\n");
             printf("    setle al\n");
             printf("    movzb rax, al\n");
+            break;
+        case ND_LSHIFT:
+            printf("    mov rcx, rdi\n");
+            printf("    sal rax, cl\n");
+            break;
+        case ND_RSHIFT:
+            printf("    mov rcx, rdi\n");
+            printf("    sar rax, cl\n");
             break;
         case ND_ADD:
             printf("    add rax, rdi\n");

@@ -10,12 +10,12 @@ token *cur;
 
 int NUM_TYPE = 17;
 int NUM_KEYWORD = 12;
-int NUM_PUNCT = 36;
+int NUM_PUNCT = 38;
 int NUM_ESCAPE = 13;
 char *types[] = {"extern", "const", "volatile", "static", "signed", "unsigned", "void", "_Bool", "char", "short", "int", "long", "float", "double", "struct", "union", "enum"};
 char *keywords[] = {"include", "typedef", "return", "if", "else", "switch", "case", "while", "for", "continue", "break", "sizeof"};
 char *puncts[] = {
-    "+=", "-=", "*=", "/=", "%=", "||", "&&", "==", "!=", "<=", ">=", "->", "++", "--",
+    "+=", "-=", "*=", "/=", "%=", "||", "&&", "==", "!=", "<=", ">=", "<<", ">>", "++", "--", "->", 
     "#", "=", "?", ":", "<", ">", "+", "-", "*", "/", "%", "&", "!", ".", ",", ";", "(", ")", "{", "}", "[", "]"
 };
 char escape[2][13] = {

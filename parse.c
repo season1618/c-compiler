@@ -30,6 +30,7 @@ node *log_or();
 node *log_and();
 node *equal();
 node *relational();
+node *shift();
 node *add();
 node *mul();
 node *unary();
@@ -342,6 +343,13 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
                 error(cur, "invalid operands to relational operator");
             }
             break;
+        case ND_LSHIFT:
+        case ND_RSHIFT:
+            if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+                nd->ty = type_base(INT);
+                break;
+            }
+            error(cur, "invalid operands to bitwise-shift operator");
         case ND_ADD:
             if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && rhs->ty->kind == INT){
                 nd->ty = type_ptr(lhs->ty->ptr_to);
@@ -525,12 +533,35 @@ node *node_arrow(node *var, token *id){
 }
 
 int eval_const(node *nd){
-    if(nd->kind == ND_NUM){
-        return nd->val;
+    switch(nd->kind){
+        case ND_COND:
+            return eval_const(nd->op1) ? eval_const(nd->op2) : eval_const(nd->op3);
+        case ND_NEG:
+            return - eval_const(nd->op1);
+        case ND_LOG_NOT:
+            return !eval_const(nd->op1);
+        case ND_NUM:
+            return nd->val;
     }
     int lhs = eval_const(nd->op1);
     int rhs = eval_const(nd->op2);
     switch(nd->kind){
+        case ND_LOG_OR:
+            return lhs || rhs;
+        case ND_LOG_AND:
+            return lhs && rhs;
+        case ND_EQ:
+            return lhs == rhs;
+        case ND_NEQ:
+            return lhs != rhs;
+        case ND_LT:
+            return lhs < rhs;
+        case ND_LEQ:
+            return lhs <= rhs;
+        case ND_LSHIFT:
+            return lhs << rhs;
+        case ND_RSHIFT:
+            return lhs >> rhs;
         case ND_ADD:
             return lhs + rhs;
         case ND_SUB:
@@ -539,6 +570,8 @@ int eval_const(node *nd){
             return lhs * rhs;
         case ND_DIV:
             return lhs / rhs;
+        case ND_MOD:
+            return lhs % rhs;
     }
 }
 
@@ -758,8 +791,10 @@ type *type_head(){
         if(expect("{")){
             int i = 0;
             while(!expect("}")){
-                push_enum(cur->str, cur->len, i);
+                token *tk = cur;
                 cur = cur->next;
+                if(expect("=")) i = eval_const(cond());
+                push_enum(tk->str, tk->len, i);
                 i++;
                 if(expect(",")) continue;
                 if(expect("}")) break;
@@ -1104,22 +1139,37 @@ node *equal(){
 }
 
 node *relational(){
-    node *nd = add();
+    node *nd = shift();
     while(true){
         if(expect("<")){
-            nd = node_binary(ND_LT, nd, add());
+            nd = node_binary(ND_LT, nd, shift());
             continue;
         }
         if(expect("<=")){
-            nd = node_binary(ND_LEQ, nd, add());
+            nd = node_binary(ND_LEQ, nd, shift());
             continue;
         }
         if(expect(">")){
-            nd = node_binary(ND_LT, add(), nd);
+            nd = node_binary(ND_LT, shift(), nd);
             continue;
         }
         if(expect(">=")){
-            nd = node_binary(ND_LEQ, add(), nd);
+            nd = node_binary(ND_LEQ, shift(), nd);
+            continue;
+        }
+        return nd;
+    }
+}
+
+node *shift(){
+    node *nd = add();
+    while(true){
+        if(expect("<<")){
+            nd = node_binary(ND_LSHIFT, nd, add());
+            continue;
+        }
+        if(expect(">>")){
+            nd = node_binary(ND_RSHIFT, nd, add());
             continue;
         }
         return nd;
