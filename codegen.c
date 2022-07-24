@@ -166,7 +166,7 @@ void gen_alloc(type *ty, node *init){
             }
             int i = 0;
             for(node *item = init->head; item; item = item->next){
-                if(i >= ty->size) fprintf(stderr, "excess elements in array initilizer");
+                if(i >= ty->size) fprintf(stderr, "excess elements in array initilizer\n");
                 gen_alloc(ty->ptr_to, item);
                 i++;
             }

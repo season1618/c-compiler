@@ -68,6 +68,16 @@ type *type_array(type *base, size_t size){
     return ty;
 }
 
+bool is_int(type *ty){
+    switch(ty->kind){
+        case BOOL:
+        case CHAR:
+        case INT:
+        case PTR:
+            return true;
+    }
+    return false;
+}
 bool match_type(type *t1, type *t2){
     if(t1->kind != t2->kind){
         return false;
@@ -338,7 +348,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             break;
         case ND_LOG_OR:
         case ND_LOG_AND:
-            if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+            if(is_int(lhs->ty) && is_int(rhs->ty)){
                 nd->ty = type_base(INT);
                 break;
             }
@@ -375,7 +385,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             }else if((rhs->ty->kind == PTR || rhs->ty->kind == ARRAY) && lhs->ty->kind == INT){
                 nd->ty = type_ptr(rhs->ty->ptr_to);
                 lhs->val *= size_of(rhs->ty->ptr_to);
-            }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+            }else if(is_int(lhs->ty) && is_int(rhs->ty)){
                 nd->ty = lhs->ty;
             }else{
                 error(cur, "invalid operands to binary +");
@@ -385,11 +395,11 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && rhs->ty->kind == INT){
                 nd->ty = type_ptr(lhs->ty->ptr_to);
                 rhs->val *= size_of(lhs->ty->ptr_to);
-            }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
-                nd->ty = lhs->ty;
             }else if(lhs->ty->kind == PTR && rhs->ty->kind == PTR && match_type(lhs->ty, rhs->ty)){
                 nd->ty = type_base(INT);
                 return node_binary(ND_DIV, nd, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
+            }else if(is_int(lhs->ty) && is_int(rhs->ty)){
+                nd->ty = lhs->ty;
             }else{
                 error(cur, "invalid operands to binary -");
             }
@@ -414,13 +424,13 @@ node *node_unary(node_kind kind, node *op){
 
     switch(kind){
         case ND_NEG:
-            if(op->ty->kind == CHAR || op->ty->kind == INT){
+            if(is_int(op->ty)){
                 nd->ty = op->ty;
                 break;
             }
             error(cur, "invalid type argument of unary '-'");
         case ND_LOG_NOT:
-            if(op->ty->kind == CHAR || op->ty->kind == INT || op->ty->kind == PTR || op->ty->kind == ARRAY){
+            if(is_int(op->ty)){
                 nd->ty = op->ty;
                 break;
             }
@@ -883,23 +893,27 @@ symb *type_ident(){
         }
     }
 
+    type *tail = calloc(1, sizeof(type));
+    type *ty = tail;
     while(true){
         if(expect("[")){
             if(expect("]")){
-                base = type_array(base, 0);
+                ty->ptr_to = type_array(type_base(NOHEAD), 0);
+                ty = ty->ptr_to;
                 continue;
             }else{
-                base = type_array(base, eval_const(assign()));
+                ty->ptr_to = type_array(type_base(NOHEAD), eval_const(assign()));
+                ty = ty->ptr_to;
                 if(expect("]")) continue;
             }
+            
             error(cur, "expected ']'");
         }
         if(expect("(")){
-            type *ty = calloc(1, sizeof(type));
-            ty->kind = FUNC;
-            ty->ptr_to = base;
-            ty->head = calloc(1, sizeof(symb));
-            symb *param = ty->head;
+            ty->ptr_to = calloc(1, sizeof(type));
+            ty->ptr_to->kind = FUNC;
+            ty->ptr_to->head = calloc(1, sizeof(symb));
+            symb *param = ty->ptr_to->head;
 
             while(!expect(")")){
                 if(cur->str[0] == '.'){ // skip variable argument
@@ -912,9 +926,11 @@ symb *type_ident(){
                 if(expect(")")) break;
                 error(cur, "expected ',' or ')'");
             }
-            ty->head = ty->head->next;
-            base = ty;
+            ty->ptr_to->head = ty->ptr_to->head->next;
+            ty = ty->ptr_to;
         }
+        ty->ptr_to = base;
+        base = tail->ptr_to;
         break;
     }
 
