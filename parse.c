@@ -1075,6 +1075,8 @@ node *stmt(){
         int num = local_num;
         if(find_type()){
             nd->op1 = dcl();
+        }else if(expect(";")){
+            nd->op1 = node_num(type_base(INT), 0);
         }else{
             nd->op1 = expr();
             if(!expect(";")) error(cur, "expected ';'");
