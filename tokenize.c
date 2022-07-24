@@ -8,11 +8,11 @@
 char *p;
 token *cur;
 
-int NUM_TYPE = 13;
+int NUM_TYPE = 17;
 int NUM_KEYWORD = 12;
 int NUM_PUNCT = 35;
 int NUM_ESCAPE = 13;
-char *types[] = {"extern", "const", "signed", "unsigned", "void", "_Bool", "char", "short", "int", "long", "struct", "union", "enum"};
+char *types[] = {"extern", "const", "volatile", "static", "signed", "unsigned", "void", "_Bool", "char", "short", "int", "long", "float", "double", "struct", "union", "enum"};
 char *keywords[] = {"include", "typedef", "return", "if", "else", "switch", "case", "while", "for", "continue", "break", "sizeof"};
 char *puncts[] = {
     "+=", "-=", "*=", "/=", "%=", "||", "&&", "==", "!=", "<=", ">=", "->", "++", "--",
@@ -209,6 +209,14 @@ token *tokenize(char *code_head){
         // skip __attribute__
         if(memcmp(p, "__attribute__", 13) == 0){
             while(*p != ';') p++;
+            continue;
+        }
+        if(memcmp(p, "__extension__", 13) == 0){
+            p += 13;
+            continue;
+        }
+        if(memcmp(p, "__inline", 8) == 0){
+            p += 8;
             continue;
         }
         if(memcmp(p, "__asm__", 7) == 0){

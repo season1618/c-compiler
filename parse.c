@@ -110,6 +110,18 @@ bool find_type(){
     return false;
 }
 
+bool find_type_next(){
+    if(cur->next->kind == TK_TYPE){
+        return true;
+    }
+    for(symb *var = global_head; var; var = var->next){
+        if(var->kind == SY_TYPE && cur->next->len == var->len && memcmp(cur->next->str, var->name, var->len) == 0){
+            return true;
+        }
+    }
+    return false;
+}
+
 void validate_type(type *ty){
     if(ty->kind == VOID){
         error(cur, "variable or field declared void");
@@ -289,6 +301,8 @@ node *node_global_def(symb *var, node *init){
     return nd;
 }
 
+node *node_num();
+
 node *node_binary(node_kind kind, node *lhs, node *rhs){
     node *nd = calloc(1, sizeof(node));
     nd->kind = kind;
@@ -331,11 +345,14 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             }
             break;
         case ND_SUB:
-            if(lhs->ty->ptr_to && match_type(lhs->ty->ptr_to, rhs->ty)){
-                nd->ty = lhs->ty;
-                rhs->val *= size_of(rhs->ty);
+            if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && rhs->ty->kind == INT){
+                nd->ty = type_ptr(lhs->ty->ptr_to);
+                rhs->val *= size_of(lhs->ty->ptr_to);
             }else if(lhs->ty->kind == INT && rhs->ty->kind == INT){
                 nd->ty = lhs->ty;
+            }else if(lhs->ty->kind == PTR && rhs->ty->kind == PTR && match_type(lhs->ty, rhs->ty)){
+                nd->ty = type_base(INT);
+                return node_binary(ND_DIV, nd, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
             }else{
                 error(cur, "invalid operands to binary -");
             }
@@ -652,6 +669,9 @@ symb *type_whole(symb *ident, type *base){
 type *type_head(){
     while(true){
         if(expect("const")) continue;
+        if(expect("volatile")) continue;
+
+        if(expect("static")) continue;
         if(expect("signed")) continue;
         if(expect("unsigned")) continue;
         if(expect("short")) continue;
@@ -662,6 +682,8 @@ type *type_head(){
     if(expect("_Bool")) return type_base(BOOL);
     if(expect("char")) return type_base(CHAR);
     if(expect("int")) return type_base(INT);
+    if(expect("float")) return type_base(INT);
+    if(expect("double")) return type_base(INT);
 
     if(expect("struct") || expect("union")){ // parse union as struct
         type *ty = calloc(1, sizeof(type));
@@ -706,12 +728,12 @@ type *type_head(){
                         tag->ty->size = ty->size;
                         tag->ty->align = ty->align;
                     }
-                    return type_base(INT);
+                    return tag->ty;
                 }
             }
             push_tag(ty);
         }
-        return type_base(INT);
+        return ty;
     }
     if(expect("enum")){
         type *ty = calloc(1, sizeof(type));
@@ -760,6 +782,7 @@ symb *type_ident(){
         base = type_ptr(base);
         while(true){
             if(expect("const")) continue;
+            if(expect("volatile")) continue;
             break;
         }
     }
@@ -1154,6 +1177,14 @@ node *unary(){
         }else{
             return node_num(type_base(INT), size_of(unary()->ty));
         }
+    }
+    if(cur->str[0] == '(' && find_type_next()){
+        expect("(");
+        symb *sy = type_ident();
+        if(!expect(")")) error(cur, "expected ')'");
+        node *nd = unary();
+        nd->ty = sy->ty;
+        return nd;
     }
     return primary();
 }
