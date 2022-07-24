@@ -1072,10 +1072,9 @@ node *stmt(){
         if(!expect("(")) error(cur, "expected '('");
 
         nd->kind = ND_FOR;
+        int num = local_num;
         if(find_type()){
-            int num = local_num;
             nd->op1 = dcl();
-            pop_local(num);
         }else{
             nd->op1 = expr();
             if(!expect(";")) error(cur, "expected ';'");
@@ -1090,6 +1089,8 @@ node *stmt(){
         if(!expect(")")) error(cur, "expected ')'");
 
         nd->op4 = stmt();
+
+        pop_local(num);
     }
     else if(expect("continue")){
         nd->kind = ND_CONTINUE;
@@ -1395,7 +1396,6 @@ node *primary(){
             nd = node_binary(ND_ADD, node_binary(ND_ASSIGN, nd, node_binary(ND_SUB, nd, one1)), one2);
             continue;
         }
-        break;
+        return nd;
     }
-    return nd;
 }
