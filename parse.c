@@ -625,18 +625,16 @@ symb *type_whole(symb *ident, type *base){
 }
 
 type *type_head(){
-    if(expect("void")){
-        return type_base(VOID);
-    }
-    if(expect("_Bool")){
-        return type_base(BOOL);
-    }
-    if(expect("char")){
-        return type_base(CHAR);
-    }
-    if(expect("int")){
-        return type_base(INT);
-    }
+    expect("signed");
+    expect("unsigned");
+    if(expect("void")) return type_base(VOID);
+    if(expect("_Bool")) return type_base(BOOL);
+    if(expect("char")) return type_base(CHAR);
+    if(expect("short int")) return type_base(INT);
+    if(expect("int")) return type_base(INT);
+    if(expect("long int")) return type_base(INT);
+    if(expect("long long int")) return type_base(INT);
+
     if(expect("struct")){
         type *ty = calloc(1, sizeof(type));
         ty->kind = STRUCT;

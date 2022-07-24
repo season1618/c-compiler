@@ -8,11 +8,11 @@
 char *p;
 token *cur;
 
-int NUM_TYPE = 9;
+int NUM_TYPE = 12;
 int NUM_KEYWORD = 12;
 int NUM_PUNCT = 35;
 int NUM_ESCAPE = 13;
-char *types[] = {"extern", "signed", "unsigned", "void", "_Bool", "char", "int", "struct", "enum"};
+char *types[] = {"extern", "signed", "unsigned", "void", "_Bool", "char", "short int", "int", "long int", "long long int", "struct", "enum"};
 char *keywords[] = {"include", "typedef", "return", "if", "else", "switch", "case", "while", "for", "continue", "break", "sizeof"};
 char *puncts[] = {
     "+=", "-=", "*=", "/=", "%=", "||", "&&", "==", "!=", "<=", ">=", "->", "++", "--",
