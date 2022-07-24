@@ -235,7 +235,7 @@ void push_tag(type *ty){
 void push_global(symb_kind kind, symb *sy){
     for(symb *var = global_head; var; var = var->next){
         if(sy->len == var->len && memcmp(sy->name, var->name, var->len) == 0){
-            error(cur, "this variable is already declared");
+            return;
         }
     }
     symb *var = calloc(1, sizeof(symb));
@@ -496,10 +496,35 @@ node *node_arrow(node *var, token *id){
     error(id, "'this struct has no member named this");
 }
 
+int eval_const(node *nd){
+    if(nd->kind == ND_NUM){
+        return nd->val;
+    }
+    int lhs = eval_const(nd->op1);
+    int rhs = eval_const(nd->op2);
+    switch(nd->kind){
+        case ND_ADD:
+            return lhs + rhs;
+        case ND_SUB:
+            return lhs - rhs;
+        case ND_MUL:
+            return lhs * rhs;
+        case ND_DIV:
+            return lhs / rhs;
+    }
+}
+
 node *program(token *token_head){
     cur = token_head;
     node_head = calloc(1, sizeof(node));
     node_tail = node_head;
+
+    // push __builtin_va_list
+    symb *sy = calloc(1, sizeof(symb));
+    sy->ty = type_base(NOHEAD);
+    sy->name = "__builtin_va_list";
+    sy->len = 17;
+    push_global(SY_TYPE, sy);
 
     while(cur->kind != TK_EOF){
         ext();
@@ -625,17 +650,20 @@ symb *type_whole(symb *ident, type *base){
 }
 
 type *type_head(){
-    expect("signed");
-    expect("unsigned");
+    while(true){
+        if(expect("const")) continue;
+        if(expect("signed")) continue;
+        if(expect("unsigned")) continue;
+        if(expect("short")) continue;
+        if(expect("long")) continue;
+        break;
+    }
     if(expect("void")) return type_base(VOID);
     if(expect("_Bool")) return type_base(BOOL);
     if(expect("char")) return type_base(CHAR);
-    if(expect("short int")) return type_base(INT);
     if(expect("int")) return type_base(INT);
-    if(expect("long int")) return type_base(INT);
-    if(expect("long long int")) return type_base(INT);
 
-    if(expect("struct")){
+    if(expect("struct") || expect("union")){ // parse union as struct
         type *ty = calloc(1, sizeof(type));
         ty->kind = STRUCT;
         
@@ -730,6 +758,10 @@ symb *type_ident(){
     type *base = type_head();
     while(expect("*")){
         base = type_ptr(base);
+        while(true){
+            if(expect("const")) continue;
+            break;
+        }
     }
 
     symb *ident = calloc(1, sizeof(symb));
@@ -760,8 +792,13 @@ symb *type_ident(){
 
     while(true){
         if(expect("[")){
-            base = type_array(base, get_number());
-            if(expect("]")) continue;
+            if(expect("]")){
+                base = type_array(base, 0);
+                continue;
+            }else{
+                base = type_array(base, eval_const(assign()));
+                if(expect("]")) continue;
+            }
             error(cur, "expected ']'");
         }
         if(expect("(")){
@@ -772,8 +809,12 @@ symb *type_ident(){
             symb *param = ty->head;
 
             while(!expect(")")){
-                param->next = type_ident();
-                param = param->next;
+                if(cur->str[0] == '.'){ // skip variable argument
+                    cur = cur->next->next->next;
+                }else{
+                    param->next = type_ident();
+                    param = param->next;
+                }
                 if(expect(",")) continue;
                 if(expect(")")) break;
                 error(cur, "expected ',' or ')'");
