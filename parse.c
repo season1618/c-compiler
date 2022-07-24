@@ -407,10 +407,10 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_MUL:
         case ND_DIV:
         case ND_MOD:
-            if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+            if(is_int(lhs->ty) && is_int(rhs->ty)){
                 nd->ty = type_base(INT);
             }else{
-                error(cur, "invalid operands to binary * or /");
+                error(cur, "invalid operands to binary * or / or %");
             }
             break;
     }
@@ -1068,7 +1068,7 @@ node *stmt(){
         if(!expect("(")) error(cur, "expected '('");
 
         nd->kind = ND_FOR;
-        if(cur->kind == TK_TYPE){
+        if(find_type()){
             nd->op1 = dcl();
         }else{
             nd->op1 = expr();
@@ -1095,8 +1095,12 @@ node *stmt(){
     }
     else if(expect("return")){
         nd->kind = ND_RET;
-        nd->op1 = expr();
-        if(!expect(";")) error(cur, "expected ';'");
+        if(expect(";")){
+            nd->op1 = node_num(type_base(INT), 0);
+        }else{
+            nd->op1 = expr();
+            if(!expect(";")) error(cur, "expected ';'");
+        }
     }
     else{
         nd = expr();
