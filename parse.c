@@ -305,6 +305,12 @@ void push_local(symb *sy){
     if(max_offset < var->offset) max_offset = var->offset;
 }
 
+void pop_local(int num){
+    for(; local_num > num; local_num--){
+        local_head = local_head->next;
+    }
+}
+
 node *node_global_def(symb *var, node *init){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_GLOBAL_DEF;
@@ -1010,9 +1016,7 @@ node *stmt(){
             item = item->next;
         }
         nd->head = nd->head->next;
-        for(; local_num > num; local_num--){
-            local_head = local_head->next;
-        }
+        pop_local(num);
     }
     else if(expect("if")){
         if(!expect("(")) error(cur, "expected '('");
@@ -1069,7 +1073,9 @@ node *stmt(){
 
         nd->kind = ND_FOR;
         if(find_type()){
+            int num = local_num;
             nd->op1 = dcl();
+            pop_local(num);
         }else{
             nd->op1 = expr();
             if(!expect(";")) error(cur, "expected ';'");
