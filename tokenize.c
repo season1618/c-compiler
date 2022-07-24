@@ -8,11 +8,11 @@
 char *p;
 token *cur;
 
-int NUM_TYPE = 7;
+int NUM_TYPE = 9;
 int NUM_KEYWORD = 12;
 int NUM_PUNCT = 35;
 int NUM_ESCAPE = 13;
-char *types[] = {"extern", "void", "bool", "char", "int", "struct", "enum"};
+char *types[] = {"extern", "signed", "unsigned", "void", "_Bool", "char", "int", "struct", "enum"};
 char *keywords[] = {"include", "typedef", "return", "if", "else", "switch", "case", "while", "for", "continue", "break", "sizeof"};
 char *puncts[] = {
     "+=", "-=", "*=", "/=", "%=", "||", "&&", "==", "!=", "<=", ">=", "->", "++", "--",
@@ -180,6 +180,13 @@ token *tokenize(char *code_head){
         // skip white space
         if(isspace(*p)){
             p++;
+            continue;
+        }
+        // skip linemarker
+        if(*p == '#'){
+            while(*p != '\n'){
+                p++;
+            }
             continue;
         }
         // skip line comment
