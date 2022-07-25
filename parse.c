@@ -386,11 +386,11 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             error(cur, "invalid operands to bitwise-shift operator");
         case ND_ADD:
             if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && rhs->ty->kind == INT){
-                nd->ty = type_ptr(lhs->ty->ptr_to);
-                rhs->val *= size_of(lhs->ty->ptr_to);
+                nd->ty = lhs->ty;
+                nd->op2 = node_binary(ND_MUL, rhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
             }else if((rhs->ty->kind == PTR || rhs->ty->kind == ARRAY) && lhs->ty->kind == INT){
-                nd->ty = type_ptr(rhs->ty->ptr_to);
-                lhs->val *= size_of(rhs->ty->ptr_to);
+                nd->ty = rhs->ty;
+                nd->op1 = node_binary(ND_MUL, lhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
             }else if(is_int(lhs->ty) && is_int(rhs->ty)){
                 nd->ty = lhs->ty;
             }else{
@@ -399,8 +399,8 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             break;
         case ND_SUB:
             if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && rhs->ty->kind == INT){
-                nd->ty = type_ptr(lhs->ty->ptr_to);
-                rhs->val *= size_of(lhs->ty->ptr_to);
+                nd->ty = lhs->ty;
+                nd->op2 = node_binary(ND_MUL, rhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
             }else if(lhs->ty->kind == PTR && rhs->ty->kind == PTR && match_type(lhs->ty, rhs->ty)){
                 nd->ty = type_base(INT);
                 return node_binary(ND_DIV, nd, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
