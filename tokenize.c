@@ -239,28 +239,6 @@ token *tokenize(char *code_head){
         if(read_type()) continue;
         if(read_keyword()) continue;
         if(read_punct()) continue;
-        if(memcmp(p, "true", 4) == 0 && !is_alnum(p[4])){
-            token *nxt = calloc(1, sizeof(token));
-            nxt->kind = TK_NUM;
-            nxt->str = p;
-            nxt->len = 4;
-            nxt->val = 1;
-            cur->next = nxt;
-            cur = nxt;
-            p += 4;
-            continue;
-        }
-        if(memcmp(p, "false", 5) == 0 && !is_alnum(p[5])){
-            token *nxt = calloc(1, sizeof(token));
-            nxt->kind = TK_NUM;
-            nxt->str = p;
-            nxt->len = 5;
-            nxt->val = 0;
-            cur->next = nxt;
-            cur = nxt;
-            p += 5;
-            continue;
-        }
         if(isdigit(*p)){
             next_number();
             continue;

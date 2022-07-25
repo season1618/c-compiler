@@ -7,7 +7,7 @@ main: $(OBJS)
 
 $(OBJS): dcl.h
 
-stage2: $(OBJS)
+stage2: main $(OBJS)
 	$(CC) -E main.c > tmp.c
 	./main tmp.c > main2.s
 	$(CC) -E tokenize.c > tmp.c
