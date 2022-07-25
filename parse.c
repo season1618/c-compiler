@@ -802,8 +802,6 @@ type *type_head(){
         if(expect("volatile")) continue;
 
         if(expect("static")) continue;
-        if(expect("signed")) continue;
-        if(expect("unsigned")) continue;
         break;
     }
     if(expect("void")){
@@ -812,21 +810,58 @@ type *type_head(){
     if(expect("_Bool")){
         return type_base(BOOL);
     }
+    if(expect("unsigned")){
+        if(expect("char")){
+            return type_base(CHAR);
+        }
+        if(expect("short")){
+            expect("int");
+            return type_base(SHORT);
+        }
+        if(expect("int")){
+            return type_base(INT);
+        }
+        if(expect("long")){
+            expect("long");
+            expect("int");
+            return type_base(LONG);
+        }
+    }
+    if(expect("signed")){
+        if(expect("char")){
+            return type_base(CHAR);
+        }
+        if(expect("short")){
+            expect("int");
+            return type_base(SHORT);
+        }
+        if(expect("int")){
+            return type_base(INT);
+        }
+        if(expect("long")){
+            expect("long");
+            expect("int");
+            return type_base(LONG);
+        }
+    }
     if(expect("char")){
         return type_base(CHAR);
     }
     if(expect("short")){
-        if(!expect("int")) error(cur, "expected 'int'");
+        expect("int");
         return type_base(SHORT);
     }
     if(expect("int")){
         return type_base(INT);
     }
     if(expect("long")){
+        if(expect("double")) return type_base(INT);
         expect("long");
-        if(!expect("int")) error(cur, "expected 'int'");
+        expect("unsigned");
+        expect("int");
         return type_base(LONG);
     }
+    
     if(expect("float")) return type_base(INT);
     if(expect("double")) return type_base(INT);
 
