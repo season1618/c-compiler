@@ -9,13 +9,6 @@
 char *file_name;
 char *code_head;
 
-void error_(char *fmt, ...){
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    exit(1);
-}
-
 void error(token *tk, char *msg){
     char *begin = tk->str;
     char *end = tk->str;
@@ -39,10 +32,10 @@ void error(token *tk, char *msg){
 
 char *read_file(char *path){
     FILE *fp = fopen(path, "r");
-    if(!fp) error_("cannot open %s: %s\n", path, strerror(errno));
-    if(fseek(fp, 0, SEEK_END) == -1) error_("%s: fseek: %s\n", path, strerror(errno));
+    if(!fp) fprintf(stderr, "cannot open %s: %s\n", path, strerror(errno));
+    if(fseek(fp, 0, SEEK_END) == -1) fprintf(stderr, "%s: fseek: %s\n", path, strerror(errno));
     size_t size = ftell(fp);
-    if(fseek(fp, 0, SEEK_SET) == -1) error_("%s: fseek: %s\n", path, strerror(errno));
+    if(fseek(fp, 0, SEEK_SET) == -1) fprintf(stderr, "%s: fseek: %s\n", path, strerror(errno));
 
     char *buf = calloc(1, size + 2);
     fread(buf, size, 1, fp);
