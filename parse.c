@@ -68,16 +68,35 @@ type *type_array(type *base, size_t size){
     return ty;
 }
 
+bool is_num(type *ty){
+    switch(ty->kind){
+        case BOOL:
+        case CHAR:
+        case SHORT:
+        case INT:
+        case LONG:
+            return true;
+    }
+    return false;
+}
+
 bool is_int(type *ty){
     switch(ty->kind){
         case BOOL:
         case CHAR:
+        case SHORT:
         case INT:
+        case LONG:
         case PTR:
             return true;
     }
     return false;
 }
+
+bool is_ptr(type *ty){
+    return ty->kind == PTR || ty->kind == ARRAY;
+}
+
 bool match_type(type *t1, type *t2){
     if(t1->kind != t2->kind){
         return false;
@@ -86,7 +105,9 @@ bool match_type(type *t1, type *t2){
         case VOID:
         case BOOL:
         case CHAR:
+        case SHORT:
         case INT:
+        case LONG:
             return true;
         case PTR:
         case ARRAY:
@@ -104,11 +125,7 @@ bool match_type(type *t1, type *t2){
 }
 
 bool castable(type *t1, type *t2){
-    if(t1->kind == BOOL || t1->kind == CHAR || t1->kind == INT){
-        if(t2->kind == BOOL || t2->kind == CHAR || t2->kind == INT){
-            return true;
-        }
-    }
+    if(is_num(t1) && is_num(t2)) return true;
     return t1->kind == t2->kind;
 }
 
@@ -161,9 +178,12 @@ int size_of(type *ty){
         case CHAR:
         case FUNC:
             return 1;
+        case SHORT:
+            return 2;
         case INT:
         case ENUM:
             return 4;
+        case LONG:
         case PTR:
             return 8;
         case ARRAY:
@@ -180,9 +200,12 @@ int align_of(type *ty){
         case CHAR:
         case FUNC:
             return 1;
+        case SHORT:
+            return 2;
         case INT:
         case ENUM:
             return 4;
+        case LONG:
         case PTR:
             return 8;
         case ARRAY:
@@ -207,8 +230,14 @@ void print_type(type *ty, int num){
         case CHAR:
             fprintf(stderr, "CHAR");
             break;
+        case SHORT:
+            fprintf(stderr, "SHORT");
+            break;
         case INT:
             fprintf(stderr, "INT");
+            break;
+        case LONG:
+            fprintf(stderr, "LONG");
             break;
         case PTR:
             fprintf(stderr, "PTR -> ");
@@ -355,14 +384,14 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_LOG_OR:
         case ND_LOG_AND:
             if(is_int(lhs->ty) && is_int(rhs->ty)){
-                nd->ty = type_base(INT);
+                nd->ty = type_base(BOOL);
                 break;
             }
             error(cur, "invalid operands to logical or/and operator");
         case ND_BIT_OR:
         case ND_BIT_XOR:
         case ND_BIT_AND:
-            if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+            if(is_num(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = type_base(INT);
                 break;
             }
@@ -372,39 +401,39 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_LT:
         case ND_LEQ:
             if(castable(lhs->ty, rhs->ty)){
-                nd->ty = type_base(INT);
+                nd->ty = type_base(BOOL);
             }else{
                 error(cur, "invalid operands to relational operator");
             }
             break;
         case ND_LSHIFT:
         case ND_RSHIFT:
-            if(lhs->ty->kind == INT && rhs->ty->kind == INT){
+            if(is_num(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = type_base(INT);
                 break;
             }
             error(cur, "invalid operands to bitwise-shift operator");
         case ND_ADD:
-            if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && rhs->ty->kind == INT){
+            if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && is_num(rhs->ty)){
                 nd->ty = lhs->ty;
                 nd->op2 = node_binary(ND_MUL, rhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
-            }else if((rhs->ty->kind == PTR || rhs->ty->kind == ARRAY) && lhs->ty->kind == INT){
+            }else if((rhs->ty->kind == PTR || rhs->ty->kind == ARRAY) && is_num(lhs->ty)){
                 nd->ty = rhs->ty;
                 nd->op1 = node_binary(ND_MUL, lhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
-            }else if(is_int(lhs->ty) && is_int(rhs->ty)){
+            }else if(is_num(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = lhs->ty;
             }else{
                 error(cur, "invalid operands to binary +");
             }
             break;
         case ND_SUB:
-            if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && rhs->ty->kind == INT){
+            if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && is_num(rhs->ty)){
                 nd->ty = lhs->ty;
                 nd->op2 = node_binary(ND_MUL, rhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
             }else if(lhs->ty->kind == PTR && rhs->ty->kind == PTR && match_type(lhs->ty, rhs->ty)){
                 nd->ty = type_base(INT);
                 return node_binary(ND_DIV, nd, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
-            }else if(is_int(lhs->ty) && is_int(rhs->ty)){
+            }else if(is_num(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = lhs->ty;
             }else{
                 error(cur, "invalid operands to binary -");
@@ -413,7 +442,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_MUL:
         case ND_DIV:
         case ND_MOD:
-            if(is_int(lhs->ty) && is_int(rhs->ty)){
+            if(is_num(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = type_base(INT);
             }else{
                 error(cur, "invalid operands to binary * or / or %");
@@ -775,14 +804,29 @@ type *type_head(){
         if(expect("static")) continue;
         if(expect("signed")) continue;
         if(expect("unsigned")) continue;
-        if(expect("short")) continue;
-        if(expect("long")) continue;
         break;
     }
-    if(expect("void")) return type_base(VOID);
-    if(expect("_Bool")) return type_base(BOOL);
-    if(expect("char")) return type_base(CHAR);
-    if(expect("int")) return type_base(INT);
+    if(expect("void")){
+        return type_base(VOID);
+    }
+    if(expect("_Bool")){
+        return type_base(BOOL);
+    }
+    if(expect("char")){
+        return type_base(CHAR);
+    }
+    if(expect("short")){
+        if(!expect("int")) error(cur, "expected 'int'");
+        return type_base(SHORT);
+    }
+    if(expect("int")){
+        return type_base(INT);
+    }
+    if(expect("long")){
+        expect("long");
+        if(!expect("int")) error(cur, "expected 'int'");
+        return type_base(LONG);
+    }
     if(expect("float")) return type_base(INT);
     if(expect("double")) return type_base(INT);
 
