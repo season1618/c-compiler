@@ -632,7 +632,7 @@ void add_builtin(symb_kind kind, char *name){
         nd->op1->head = NULL;
         nd->ty = calloc(1, sizeof(type));
         nd->ty->kind = FUNC;
-        nd->ty->ptr_to = NOHEAD;
+        nd->ty->ptr_to = type_base(NOHEAD);
         nd->ty->head = NULL;
         nd->name = name;
         nd->len = strlen(name);
@@ -645,28 +645,6 @@ node *program(token *token_head){
     node_head = calloc(1, sizeof(node));
     node_tail = node_head;
 
-    // push __builtin_va_list
-    // symb sy = {SY_VAR, NULL, type_base(NOHEAD), "__builtin_va_list", 17};
-    // node *nd = calloc(1, sizeof(node));
-    // nd->kind = ND_FUNC_DEF;
-    // nd->op1 = calloc(1, sizeof(node));
-    // nd->op1->kind = ND_BLOCK;
-    // nd->op1->head = NULL;
-    // nd->ty = calloc(1, sizeof(type));
-    // nd->ty->kind = FUNC;
-    // nd->ty->ptr_to = NOHEAD;
-    // nd->ty->head = NULL;
-    // nd->name = "__builtin_va_list";
-    // nd->len = 17;
-
-    // node nd = {ND_FUNC_DEF, calloc(1, sizeof(node)), 0, 0, 0, 0, calloc(1, sizeof(node)), type_base(NOHEAD), "__builtin_va_list", 17};
-    // nd.ty->head = NULL;
-    // symb *sy = calloc(1, sizeof(symb));
-    // sy->ty = type_base(NOHEAD);
-    // sy->name = "__builtin_va_list";
-    // sy->len = 17;
-    // push_global(SY_VAR, &sy);
-    // push_ext(nd);
     add_builtin(SY_TYPE, "__builtin_va_list");
     add_builtin(SY_VAR, "__builtin_va_start");
     add_builtin(SY_VAR, "__builtin_bswap16");
