@@ -623,21 +623,6 @@ void add_builtin(symb_kind kind, char *name){
     sy->name = name;
     sy->len = strlen(name);
     push_global(kind, sy);
-
-    if(kind == SY_VAR){
-        node *nd = calloc(1, sizeof(node));
-        nd->kind = ND_FUNC_DEF;
-        nd->op1 = calloc(1, sizeof(node));
-        nd->op1->kind = ND_BLOCK;
-        nd->op1->head = NULL;
-        nd->ty = calloc(1, sizeof(type));
-        nd->ty->kind = FUNC;
-        nd->ty->ptr_to = type_base(NOHEAD);
-        nd->ty->head = NULL;
-        nd->name = name;
-        nd->len = strlen(name);
-        push_ext(nd);
-    }
 }
 
 node *program(token *token_head){
@@ -645,6 +630,7 @@ node *program(token *token_head){
     node_head = calloc(1, sizeof(node));
     node_tail = node_head;
 
+    // implicit declaration of builtin type or function
     add_builtin(SY_TYPE, "__builtin_va_list");
     add_builtin(SY_VAR, "__builtin_va_start");
     add_builtin(SY_VAR, "__builtin_bswap16");
@@ -672,6 +658,13 @@ void ext(){
             symb *var = type_ident();
             var = type_whole(var, head);
 
+            // remove definition of builtin function
+            if(var->len == 10 && memcmp(var->name, "__bswap_16", 10) == 0){ stmt(); return; }
+            if(var->len == 10 && memcmp(var->name, "__bswap_32", 10) == 0){ stmt(); return; }
+            if(var->len == 10 && memcmp(var->name, "__bswap_64", 10) == 0){ stmt(); return; }
+            if(var->len == 17 && memcmp(var->name, "__uint16_identity", 17) == 0){ stmt(); return; }
+            if(var->len == 17 && memcmp(var->name, "__uint32_identity", 17) == 0){ stmt(); return; }
+            if(var->len == 17 && memcmp(var->name, "__uint64_identity", 17) == 0){ stmt(); return; }
             if(var->ty->kind == FUNC && var->is_func_def){
                 push_global(SY_VAR, var);
                 node *nd = calloc(1, sizeof(node));

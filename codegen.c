@@ -95,6 +95,7 @@ void gen_code(node *node_head){
 void gen_ext(node *nd){
     switch(nd->kind){
         case ND_FUNC_DEF:{
+            printf(".global %.*s\n", nd->len, nd->name);
             printf(".text\n");
             printf("%.*s:\n", nd->len, nd->name);
             
