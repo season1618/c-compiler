@@ -85,11 +85,10 @@ void gen_rval();
 
 void gen_code(node *node_head){
     printf(".intel_syntax noprefix\n");
-    printf(".global main\n");
 
     for(node *nd = node_head; nd; nd = nd->next){
         gen_ext(nd);
-    }    
+    }
 }
 
 void gen_ext(node *nd){
@@ -124,6 +123,7 @@ void gen_ext(node *nd){
             gen_stmt(nd->op1);
 
             printf("    mov rsp, rbp\n");
+            printf("    mov rax, 0\n");
             printf("    pop rbp\n");
             printf("    ret\n");
 
