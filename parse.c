@@ -611,6 +611,8 @@ int eval_const(node *nd){
             return - eval_const(nd->op1);
         case ND_LOG_NOT:
             return !eval_const(nd->op1);
+        case ND_CAST:
+            return eval_const(nd->op1);
         case ND_NUM:
             return nd->val;
     }
