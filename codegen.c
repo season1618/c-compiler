@@ -51,9 +51,13 @@ void mov_memory_from_register(char *dest[4], char *src[4], type *ty){
         case CHAR:
             printf("    mov BYTE PTR [%s], %s\n", dest[3], src[0]);
             break;
+        case SHORT:
+            printf("    mov WORD PTR [%s], %s\n", dest[3], src[1]);
+            break;
         case INT:
             printf("    mov DWORD PTR [%s], %s\n", dest[3], src[2]);
             break;
+        case LONG:
         case PTR:
             printf("    mov QWORD PTR [%s], %s\n", dest[3], src[3]);
             break;
@@ -66,9 +70,13 @@ void mov_register_from_memory(char *dest[4], char *src[4], type *ty){
         case CHAR:
             printf("    movsx %s, BYTE PTR [%s]\n", dest[3], src[3]);
             break;
+        case SHORT:
+            printf("    movsx %s, WORD PTR [%s]\n", dest[3], src[3]);
+            break;
         case INT:
             printf("    movsx %s, DWORD PTR [%s]\n", dest[3], src[3]);
             break;
+        case LONG:
         case PTR:
             printf("    mov %s, QWORD PTR [%s]\n", dest[3], src[3]);
             break;
@@ -148,13 +156,22 @@ void gen_alloc(type *ty, node *init){
         return;
     }
     switch(ty->kind){
+        case BOOL:
         case CHAR:
             if(init->val == 0) printf("    .zero 1\n");
+            else printf("    .byte %d\n", init->val);
+            break;
+        case SHORT:
+            if(init->val == 0) printf("    .zero 2\n");
             else printf("    .byte %d\n", init->val);
             break;
         case INT:
             if(init->val == 0) printf("    .zero 4\n");
             else printf("    .long %d\n", init->val);
+            break;
+        case LONG:
+            if(init->val == 0) printf("    .zero 8\n");
+            else printf("    .byte %d\n", init->val);
             break;
         case PTR:
             if(init->kind == ND_ADR) printf("    .quad %.*s\n", init->op1->len, init->op1->name);
@@ -584,7 +601,9 @@ void gen_rval(node *nd){
             switch(nd->ty->kind){
                 case BOOL:
                 case CHAR:
+                case SHORT:
                 case INT:
+                case LONG:
                 case PTR:
                     mov_register_from_memory(rax_, rax_, nd->ty);
                     break;

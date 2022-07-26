@@ -32,10 +32,19 @@ void error(token *tk, char *msg){
 
 char *read_file(char *path){
     FILE *fp = fopen(path, "r");
-    if(!fp) fprintf(stderr, "cannot open %s: %s\n", path, strerror(errno));
-    if(fseek(fp, 0, SEEK_END) == -1) fprintf(stderr, "%s: fseek: %s\n", path, strerror(errno));
+    if(!fp){
+        fprintf(stderr, "cannot open %s: %s\n", path, strerror(errno));
+        exit(1);
+    }
+    if(fseek(fp, 0, SEEK_END) == -1){
+        fprintf(stderr, "%s: fseek: %s\n", path, strerror(errno));
+        exit(1);
+    }
     size_t size = ftell(fp);
-    if(fseek(fp, 0, SEEK_SET) == -1) fprintf(stderr, "%s: fseek: %s\n", path, strerror(errno));
+    if(fseek(fp, 0, SEEK_SET) == -1){
+        fprintf(stderr, "%s: fseek: %s\n", path, strerror(errno));
+        exit(1);
+    }
 
     char *buf = calloc(1, size + 2);
     fread(buf, size, 1, fp);
@@ -52,7 +61,7 @@ char *read_file(char *path){
 
 int main(int argc, char **argv){
     if(argc != 2){
-        fprintf(stderr, "incorrect number of arguments");
+        fprintf(stderr, "incorrect number of arguments\n");
         return 1;
     }
 
