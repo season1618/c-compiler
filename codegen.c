@@ -83,6 +83,25 @@ void mov_register_from_memory(char *dest[4], char *src[4], type *ty){
     }
 }
 
+void mov_register_from_register(char *dest[4], char *src[4], type *ty){
+    switch(ty->kind){
+        case BOOL:
+        case CHAR:
+            printf("    movsx %s, %s\n", dest[3], src[0]);
+            break;
+        case SHORT:
+            printf("    movsx %s, %s\n", dest[3], src[1]);
+            break;
+        case INT:
+            printf("    movsx %s, %s\n", dest[3], src[2]);
+            break;
+        case LONG:
+        case PTR:
+            if(dest != src) printf("    movsx %s, %s\n", dest[3], src[3]);
+            break;
+    }
+}
+
 void gen_ext();
 void gen_alloc();
 void gen_stmt();
@@ -413,6 +432,12 @@ void gen_expr(node *nd){
             break;
         case ND_ADR:
             gen_lval(nd->op1);
+            break;
+        case ND_CAST:
+            gen_expr(nd->op1);
+            printf("    pop rax\n");
+            mov_register_from_register(rax_, rax_, nd->ty);
+            printf("    push rax\n");
             break;
         
         // right value

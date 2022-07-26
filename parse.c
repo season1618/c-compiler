@@ -483,6 +483,14 @@ node *node_unary(node_kind kind, node *op){
     return nd;
 }
 
+node *node_cast(type *ty, node *op){
+    node *nd = calloc(1, sizeof(node));
+    nd->kind = ND_CAST;
+    nd->ty = ty;
+    nd->op1 = op;
+    return nd;
+}
+
 node *node_num(type *ty, int val){
     node *nd = calloc(1, sizeof(node));
     nd->kind = ND_NUM;
@@ -1425,9 +1433,7 @@ node *unary(){
         expect("(");
         symb *sy = type_ident();
         if(!expect(")")) error(cur, "expected ')'");
-        node *nd = unary();
-        nd->ty = sy->ty;
-        return nd;
+        return node_cast(sy->ty, unary());
     }
     return primary();
 }

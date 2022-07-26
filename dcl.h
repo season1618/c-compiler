@@ -76,6 +76,7 @@ typedef enum {
     ND_LOG_NOT,
     ND_ADR,
     ND_DEREF,
+    ND_CAST,
 
     // primary
     ND_GLOBAL,
