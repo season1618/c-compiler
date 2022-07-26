@@ -713,6 +713,7 @@ void ext(){
                 local_num = 0;
                 max_offset = 0;
                 for(symb *param = var->ty->head; param; param = param->next){
+                    if(param->ty->kind == ARRAY) param->ty->kind = PTR;
                     push_local(param);
                     param->offset = local_head->offset;
                 }
