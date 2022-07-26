@@ -126,7 +126,7 @@ bool match_type(type *t1, type *t2){
 
 bool castable(type *t1, type *t2){
     if(is_num(t1) && is_num(t2)) return true;
-    if(is_ptr(t1) && is_ptr(t2)) return match_type(t1->ptr_to, t2->ptr_to);
+    if(is_ptr(t1) && is_ptr(t2)) return true;
     return t1->kind == t2->kind;
 }
 
