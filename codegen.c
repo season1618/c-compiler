@@ -359,7 +359,7 @@ void gen_stmt(node *nd){
             printf("    ret\n");
             return;
     }
-    gen_expr();
+    gen_expr(nd);
     printf("    pop rax\n");
 }
 
