@@ -288,6 +288,8 @@ void gen_stmt(node *nd){
             gen_stmt(nd->op2);
 
             printf(".L%d:\n", label_end);
+
+            pop_block();
             return;
         case ND_CASE:
             printf(".L%d:\n", nd->op1->offset + nd->offset);
