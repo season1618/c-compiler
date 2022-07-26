@@ -20,8 +20,8 @@ void pop_block(){
     block_top = block_top->next;
 }
 
-char *rax_[4] = {"al", "ax", "eax", "rax"};
-char *rbx_[4] = {"bl", "bx", "ebx", "rbx"};
+char *rax_[4] = { "al",  "ax", "eax", "rax"};
+char *rbx_[4] = { "bl",  "bx", "ebx", "rbx"};
 
 char *rdi_[4] = {"dil",  "di", "edi", "rdi"};
 char *rsi_[4] = {"sil",  "si", "esi", "rsi"};
