@@ -282,7 +282,7 @@ void gen_stmt(node *nd){
                 printf("    je .L%d\n", i);
                 i--;
             }
-            // printf("    jmp .L%d\n", label_default);
+            printf("    jmp .L%d\n", label_end);
             
             gen_stmt(nd->op2);
 
