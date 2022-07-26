@@ -182,7 +182,7 @@ void gen_alloc(type *ty, node *init){
             break;
         case SHORT:
             if(init->val == 0) printf("    .zero 2\n");
-            else printf("    .byte %d\n", init->val);
+            else printf("    .value %d\n", init->val);
             break;
         case INT:
             if(init->val == 0) printf("    .zero 4\n");
@@ -190,10 +190,11 @@ void gen_alloc(type *ty, node *init){
             break;
         case LONG:
             if(init->val == 0) printf("    .zero 8\n");
-            else printf("    .byte %d\n", init->val);
+            else printf("    .quad %d\n", init->val);
             break;
         case PTR:
-            if(init->kind == ND_ADR) printf("    .quad %.*s\n", init->op1->len, init->op1->name);
+            if(init->kind == ND_GLOBAL && init->ty->kind == ARRAY) printf("    .quad %.*s\n", init->len, init->name);
+            else if(init->kind == ND_ADR) printf("    .quad %.*s\n", init->op1->len, init->op1->name);
             else if(init->kind == ND_STRING) printf("    .quad .LC%d\n", init->offset);
             break;
         case ARRAY:
