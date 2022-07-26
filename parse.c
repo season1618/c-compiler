@@ -126,6 +126,7 @@ bool match_type(type *t1, type *t2){
 
 bool castable(type *t1, type *t2){
     if(is_num(t1) && is_num(t2)) return true;
+    if(is_ptr(t1) && is_ptr(t2)) return match_type(t1->ptr_to, t2->ptr_to);
     return t1->kind == t2->kind;
 }
 
@@ -374,13 +375,11 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             nd->ty = rhs->ty;
             break;
         case ND_ASSIGN:
-            if(castable(lhs->ty, rhs->ty) || lhs->ty->kind == PTR && rhs->ty->kind == ARRAY && match_type(lhs->ty->ptr_to, rhs->ty->ptr_to)){
+            if(castable(lhs->ty, rhs->ty)){
                 nd->ty = lhs->ty;
+                break;
             }
-            else{
-                error(cur, "invalid operands to assignment operator");
-            }
-            break;
+            error(cur, "invalid operands to assignment operator");
         case ND_LOG_OR:
         case ND_LOG_AND:
             if(is_int(lhs->ty) && is_int(rhs->ty)){
@@ -402,10 +401,9 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_LEQ:
             if(castable(lhs->ty, rhs->ty)){
                 nd->ty = type_base(BOOL);
-            }else{
-                error(cur, "invalid operands to relational operator");
+                break;
             }
-            break;
+            error(cur, "invalid operands to relational operator");
         case ND_LSHIFT:
         case ND_RSHIFT:
             if(is_num(lhs->ty) && is_num(rhs->ty)){
@@ -414,10 +412,10 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             }
             error(cur, "invalid operands to bitwise-shift operator");
         case ND_ADD:
-            if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && is_num(rhs->ty)){
+            if(is_ptr(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = lhs->ty;
                 nd->op2 = node_binary(ND_MUL, rhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
-            }else if((rhs->ty->kind == PTR || rhs->ty->kind == ARRAY) && is_num(lhs->ty)){
+            }else if(is_ptr(rhs->ty) && is_num(lhs->ty)){
                 nd->ty = rhs->ty;
                 nd->op1 = node_binary(ND_MUL, lhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
             }else if(is_num(lhs->ty) && is_num(rhs->ty)){
@@ -427,7 +425,7 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             }
             break;
         case ND_SUB:
-            if((lhs->ty->kind == PTR || lhs->ty->kind == ARRAY) && is_num(rhs->ty)){
+            if(is_ptr(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = lhs->ty;
                 nd->op2 = node_binary(ND_MUL, rhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
             }else if(lhs->ty->kind == PTR && rhs->ty->kind == PTR && match_type(lhs->ty, rhs->ty)){
@@ -444,10 +442,9 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
         case ND_MOD:
             if(is_num(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = type_base(INT);
-            }else{
-                error(cur, "invalid operands to binary * or / or %");
+                break;
             }
-            break;
+            error(cur, "invalid operands to binary * or / or %");
     }
     return nd;
 }
@@ -474,7 +471,7 @@ node *node_unary(node_kind kind, node *op){
             nd->ty = type_ptr(op->ty);
             break;
         case ND_DEREF:
-            if(op->ty->kind == PTR || op->ty->kind == ARRAY){
+            if(is_ptr(op->ty)){
                 nd->ty = op->ty->ptr_to;
                 break;
             }
