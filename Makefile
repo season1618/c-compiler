@@ -30,7 +30,10 @@ stage3: stage2 $(OBJS)
 	$(CC) -o stage3 main3.s tokenize3.s parse3.s codegen3.s builtin.s $(LDFLAGS)
 
 valid: stage2 stage3
-	diff stage2 stage3
+	diff main2.s main3.s
+	diff tokenize2.s tokenize3.s
+	diff parse2.s parse3.s
+	diff codegen2.s codegen3.s
 
 test: main test/test.c
 	./main test/test.c > tmp.s
