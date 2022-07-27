@@ -504,6 +504,40 @@ void gen_expr(node *nd){
 }
 
 void gen_binary(node *nd){
+    switch(nd->kind){
+        case ND_LOG_OR:{
+            int label_end = label_num;
+            label_num++;
+
+            gen_expr(nd->op1);
+            printf("    pop rax\n");
+            printf("    cmp rax, 0\n");
+            printf("    jne .L%d\n", label_end);
+
+            gen_expr(nd->op2);
+            printf("    pop rax\n");
+
+            printf(".L%d:\n", label_end);
+            printf("    push rax\n");
+            return;
+        }
+        case ND_LOG_AND:{
+            int label_end = label_num;
+            label_num++;
+
+            gen_expr(nd->op1);
+            printf("    pop rax\n");
+            printf("    cmp rax, 0\n");
+            printf("    je .L%d\n", label_end);
+
+            gen_expr(nd->op2);
+            printf("    pop rax\n");
+
+            printf(".L%d:\n", label_end);
+            printf("    push rax\n");
+            return;
+        }
+    }
     gen_expr(nd->op1);
     gen_expr(nd->op2);
     printf("    pop rdi\n");
@@ -512,24 +546,6 @@ void gen_binary(node *nd){
     switch(nd->kind){
         case ND_COMMA:
             printf("    mov rax, rdi\n");
-            break;
-        case ND_LOG_OR:
-            printf("    cmp rax, 0\n");
-            printf("    setne al\n");
-            printf("    movsx rax, al\n");
-            printf("    cmp rdi, 0\n");
-            printf("    setne dil\n");
-            printf("    movsx rdi, dil\n");
-            printf("    or rax, rdi\n");
-            break;
-        case ND_LOG_AND:
-            printf("    cmp rax, 0\n");
-            printf("    setne al\n");
-            printf("    movsx rax, al\n");
-            printf("    cmp rdi, 0\n");
-            printf("    setne dil\n");
-            printf("    movsx rdi, dil\n");
-            printf("    and rax, rdi\n");
             break;
         case ND_BIT_OR:
             printf("    or rax, rdi\n");
