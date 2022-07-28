@@ -2,6 +2,6 @@
 *.s
 *.o
 tmp*
-foo*
-a.out
 main
+stage2
+stage3
