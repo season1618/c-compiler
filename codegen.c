@@ -512,10 +512,15 @@ void gen_binary(node *nd){
             gen_expr(nd->op1);
             printf("    pop rax\n");
             printf("    cmp rax, 0\n");
+            printf("    setne al\n");
+            printf("    movzb rax, al\n");
             printf("    jne .L%d\n", label_end);
 
             gen_expr(nd->op2);
             printf("    pop rax\n");
+            printf("    cmp rax, 0\n");
+            printf("    setne al\n");
+            printf("    movzb rax, al\n");
 
             printf(".L%d:\n", label_end);
             printf("    push rax\n");
@@ -528,10 +533,15 @@ void gen_binary(node *nd){
             gen_expr(nd->op1);
             printf("    pop rax\n");
             printf("    cmp rax, 0\n");
+            printf("    setne al\n");
+            printf("    movzb rax, al\n");
             printf("    je .L%d\n", label_end);
 
             gen_expr(nd->op2);
             printf("    pop rax\n");
+            printf("    cmp rax, 0\n");
+            printf("    setne al\n");
+            printf("    movzb rax, al\n");
 
             printf(".L%d:\n", label_end);
             printf("    push rax\n");
