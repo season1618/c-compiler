@@ -40,7 +40,7 @@ node *unary();
 node *primary();
 
 bool expect(char *op){
-    if(cur->len == strlen(op) && memcmp(cur->str, op, cur->len) == 0){
+    if(strlen(op) == cur->len && memcmp(op, cur->str, cur->len) == 0){
         cur = cur->next;
         return true;
     }
@@ -129,7 +129,7 @@ bool match_type(type *t1, type *t2){
             return true;
         case STRUCT:
             if(!t1->name || !t2->name) return false;
-            return t1->len == t2->len && memcmp(t1->name, t2->name, t1->len) == 0;
+            return t1->len == t2->len && memcmp(t1->name, t2->name, t2->len) == 0;
     }
 }
 
@@ -519,7 +519,7 @@ node *node_var(char *name, int len){
     node *nd = calloc(1, sizeof(node));
 
     for(symb *var = local_head; var; var = var->next){
-        if(var->len == len && memcmp(var->name, name, var->len) == 0){
+        if(len == var->len && memcmp(name, var->name, var->len) == 0){
             nd->kind = ND_LOCAL;
             nd->ty = var->ty;
             nd->offset = var->offset;
@@ -527,7 +527,7 @@ node *node_var(char *name, int len){
         }
     }
     for(symb *var = global_head; var; var = var->next){
-        if(var->len == len && memcmp(var->name, name, var->len) == 0){
+        if(len == var->len && memcmp(name, var->name, var->len) == 0){
             if(var->ty->kind == ENUM){
                 return node_num(type_base(INT), var->val);
             }
@@ -588,7 +588,7 @@ node *node_dot(node *var, char *name, int len){
     error(cur, "this struct has no member named this");
 }
 
-node *node_arrow(node *var, token *id){
+node *node_arrow(node *var, char *name, int len){
     if(var->ty->kind != PTR || var->ty->ptr_to->kind != STRUCT){
         error(cur, "type of variable is not a pointer to structure");
     }
@@ -596,13 +596,13 @@ node *node_arrow(node *var, token *id){
     nd->kind = ND_ARROW;
     nd->op1 = var;
     for(symb *memb = var->ty->ptr_to->head; memb; memb = memb->next){
-        if(id->len == memb->len && memcmp(id->str, memb->name, memb->len) == 0){
+        if(len == memb->len && memcmp(name, memb->name, memb->len) == 0){
             nd->ty = memb->ty;
             nd->offset = memb->offset;
             return nd;
         }
     }
-    error(id, "'this struct has no member named this");
+    error(cur, "'this struct has no member named this");
 }
 
 int eval_const(node *nd){
@@ -1492,7 +1492,7 @@ node *primary(){
             continue;
         }
         if(expect("->")){
-            nd = node_arrow(nd, cur);
+            nd = node_arrow(nd, cur->str, cur->len);
             cur = cur->next;
             continue;
         }
