@@ -7,7 +7,7 @@ main: $(OBJS)
 
 $(OBJS): dcl.h
 
-stage2: main $(OBJS)
+stage2: main $(SRCS)
 	$(CC) -E main.c > tmp.c
 	./main tmp.c > main2.s
 	$(CC) -E tokenize.c > tmp.c
@@ -16,9 +16,9 @@ stage2: main $(OBJS)
 	./main tmp.c > parse2.s
 	$(CC) -E codegen.c > tmp.c
 	./main tmp.c > codegen2.s
-	$(CC) -o stage2 main2.s tokenize2.s parse2.s codegen2.s builtin.s $(LDFLAGS)
+	$(CC) -o stage2 main2.s tokenize2.s parse2.s codegen2.s
 
-stage3: stage2 $(OBJS)
+stage3: stage2 $(SRCS)
 	$(CC) -E main.c > tmp.c
 	./stage2 tmp.c > main3.s
 	$(CC) -E tokenize.c > tmp.c
@@ -27,7 +27,7 @@ stage3: stage2 $(OBJS)
 	./stage2 tmp.c > parse3.s
 	$(CC) -E codegen.c > tmp.c
 	./stage2 tmp.c > codegen3.s
-	$(CC) -o stage3 main3.s tokenize3.s parse3.s codegen3.s builtin.s $(LDFLAGS)
+	$(CC) -o stage3 main3.s tokenize3.s parse3.s codegen3.s
 
 valid: stage2 stage3
 	diff main2.s main3.s
