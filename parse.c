@@ -47,6 +47,15 @@ bool expect(char *op){
     return false;
 }
 
+int get_number(){
+    if(cur->kind != TK_NUM){
+        error(cur, "expected number");
+    }
+    int val = cur->val;
+    cur = cur->next;
+    return val;
+}
+
 type *type_base(type_kind kind){
     type *ty = calloc(1, sizeof(type));
     ty->kind = kind;
@@ -263,15 +272,6 @@ void print_type(type *ty, int num){
     }
 }
 
-int get_number(){
-    if(cur->kind != TK_NUM){
-        error(cur, "expected number");
-    }
-    int val = cur->val;
-    cur = cur->next;
-    return val;
-}
-
 void push_ext(node *nd){
     node_tail->next = nd;
     node_tail = nd;
@@ -415,28 +415,33 @@ node *node_binary(node_kind kind, node *lhs, node *rhs){
             if(is_ptr(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = lhs->ty;
                 nd->op2 = node_binary(ND_MUL, rhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
-            }else if(is_ptr(rhs->ty) && is_num(lhs->ty)){
+                break;
+            }
+            if(is_ptr(rhs->ty) && is_num(lhs->ty)){
                 nd->ty = rhs->ty;
                 nd->op1 = node_binary(ND_MUL, lhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
-            }else if(is_num(lhs->ty) && is_num(rhs->ty)){
-                nd->ty = lhs->ty;
-            }else{
-                error(cur, "invalid operands to binary +");
+                break;
             }
-            break;
+            if(is_num(lhs->ty) && is_num(rhs->ty)){
+                nd->ty = lhs->ty;
+                break;
+            }
+            error(cur, "invalid operands to binary +");
         case ND_SUB:
             if(is_ptr(lhs->ty) && is_num(rhs->ty)){
                 nd->ty = lhs->ty;
                 nd->op2 = node_binary(ND_MUL, rhs, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
-            }else if(lhs->ty->kind == PTR && rhs->ty->kind == PTR && match_type(lhs->ty, rhs->ty)){
+                break;
+            }
+            if(lhs->ty->kind == PTR && rhs->ty->kind == PTR && match_type(lhs->ty, rhs->ty)){
                 nd->ty = type_base(INT);
                 return node_binary(ND_DIV, nd, node_num(type_base(INT), size_of(lhs->ty->ptr_to)));
-            }else if(is_num(lhs->ty) && is_num(rhs->ty)){
-                nd->ty = lhs->ty;
-            }else{
-                error(cur, "invalid operands to binary -");
             }
-            break;
+            if(is_num(lhs->ty) && is_num(rhs->ty)){
+                nd->ty = lhs->ty;
+                break;
+            }
+            error(cur, "invalid operands to binary -");
         case ND_MUL:
         case ND_DIV:
         case ND_MOD:
