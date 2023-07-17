@@ -133,15 +133,11 @@ void gen_ext(node *nd){
             int num_param_int = 0;
             for(symb *param = nd->ty->head; param; param = param->next){
                 if(num_param_int < 6){
-                    printf("    mov rax, rbp\n");
-                    printf("    sub rax, %d\n", param->offset);
+                    printf("    lea rax, [rbp-%d]\n", param->offset);
                     mov_memory_from_register(rax_, int_arg_reg[num_param_int], param->ty);
                 }else{
-                    printf("    mov rax, rbp\n");
-                    printf("    sub rax, %d\n", param->offset);
-                    printf("    mov rbx, rbp\n");
-                    printf("    add rbx, %d\n", 8 * (num_param_int - 4));
-                    printf("    mov rbx, [rbx]\n");
+                    printf("    lea rax, [rbp-%d]\n", param->offset);
+                    printf("    mov rbx, [rbp+%d]\n", 8 * (num_param_int - 4));
                     mov_memory_from_register(rax_, rbx_, param->ty);
                 }
                 num_param_int++;
@@ -453,7 +449,7 @@ void gen_expr(node *nd){
             printf("    push %d\n", nd->val);
             return;
         case ND_STRING:
-            printf("    lea rax, .LC%d[rip]\n", nd->offset);
+            printf("    lea rax, [rip+.LC%d]\n", nd->offset);
             printf("    push rax\n");
             break;
         case ND_FUNC_CALL:{
@@ -542,11 +538,12 @@ void gen_binary(node *nd){
             return;
         }
     }
+
     gen_expr(nd->op1);
     gen_expr(nd->op2);
     printf("    pop rdi\n");
     printf("    pop rax\n");
-    
+
     switch(nd->kind){
         case ND_COMMA:
             printf("    mov rax, rdi\n");
@@ -613,12 +610,11 @@ void gen_binary(node *nd){
 void gen_lval(node *nd){
     switch(nd->kind){
         case ND_GLOBAL:
-            printf("    lea rax, %.*s[rip]\n", nd->len, nd->name);
+            printf("    lea rax, [rip+%.*s]\n", nd->len, nd->name);
             printf("    push rax\n");
             return;
         case ND_LOCAL:
-            printf("    mov rax, rbp\n");
-            printf("    sub rax, %d\n", nd->offset);
+            printf("    lea rax, [rbp-%d]\n", nd->offset);
             printf("    push rax\n");
             return;
         case ND_DEREF:
