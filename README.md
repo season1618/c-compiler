@@ -1,11 +1,10 @@
 # subset C compiler for x86-64 on Linux
 
-[情報工学系 プログラミング創造演習(Creating Programming Projects)](https://titech-cpp.github.io/)
-
-[Cコンパイラ開発メモ](https://github.com/season1618/books/blob/main/c-compiler/index.md)
+- [情報工学系 プログラミング創造演習(Creating Programming Projects)](https://titech-cpp.github.io/)
+- [Cコンパイラ開発メモ](https://season1618.github.io/note/cs/c-compiler/)
 
 ## Environment
-wsl2
+WSL2: Ubuntu-20.04
 
 ## Development
 
