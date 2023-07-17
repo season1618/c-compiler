@@ -9,36 +9,18 @@ WSL2: Ubuntu-20.04
 ## Development
 
 ```
-$ make
+$ make stageN
 ```
 
-to build the stage1 compiler.
+to build the stage N (N = 1,2,3) compiler.
+
+## Test
 
 ```
-$ make stage2
+$ make testN
 ```
 
-to build the stage2 compiler.
-
-```
-$ make stage3
-```
-
-to build the stage3 compiler.
-
-## Tests
-
-```
-$ make test
-```
-
-to compile `test/test.c` by the stage1 compiler and run it.
-
-```
-$ make test2
-```
-
-to compile `test/test.c` by the stage2 compiler and run it.
+to compile `test/test.c` by the stageN (N = 1,2) compiler and run it.
 
 ```
 $ make valid
