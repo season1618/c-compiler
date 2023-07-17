@@ -242,9 +242,8 @@ void gen_stmt(node *nd){
             printf("    cmp rax, 0\n");
             
             if(nd->op3){
-                l1 = label_num;
-                l2 = label_num + 1;
-                label_num += 2;
+                l1 = label_num++;
+                l2 = label_num++;
 
                 printf("    je .L%d\n", l1);
                 gen_stmt(nd->op2);
@@ -256,8 +255,7 @@ void gen_stmt(node *nd){
                 
                 printf(".L%d:\n", l2);
             }else{
-                l1 = label_num;
-                label_num += 1;
+                l1 = label_num++;
 
                 printf("    je .L%d\n", l1);
                 gen_stmt(nd->op2);
@@ -296,9 +294,8 @@ void gen_stmt(node *nd){
             gen_stmt(nd->op2);
             return;
         case ND_WHILE:
-            l1 = label_num;
-            l2 = label_num + 1;
-            label_num += 2;
+            l1 = label_num++;
+            l2 = label_num++;
             push_block(ND_WHILE, l1, l2);
 
             printf(".L%d:\n", l1);
@@ -315,9 +312,8 @@ void gen_stmt(node *nd){
             pop_block();
             return;
         case ND_FOR:
-            l1 = label_num;
-            l2 = label_num + 1;
-            label_num += 2;
+            l1 = label_num++;
+            l2 = label_num++;
             push_block(ND_FOR, l1, l2);
 
             gen_stmt(nd->op1);
@@ -378,10 +374,9 @@ void gen_expr(node *nd){
             mov_memory_from_register(rax_, rdi_, nd->ty);
             printf("    push rdi\n");
             break;
-        case ND_COND:;
-            int l1 = label_num;
-            int l2 = label_num + 1;
-            label_num += 2;
+        case ND_COND:{
+            int l1 = label_num++;
+            int l2 = label_num++;
 
             gen_expr(nd->op1);
             printf("    pop rax\n");
@@ -396,6 +391,7 @@ void gen_expr(node *nd){
             
             printf(".L%d:\n", l2);
             break;
+        }
             
         // binary operation
         case ND_COMMA:
@@ -506,8 +502,7 @@ void gen_expr(node *nd){
 void gen_binary(node *nd){
     switch(nd->kind){
         case ND_LOG_OR:{
-            int label_end = label_num;
-            label_num++;
+            int label_end = label_num++;
 
             gen_expr(nd->op1);
             printf("    pop rax\n");
@@ -527,8 +522,7 @@ void gen_binary(node *nd){
             return;
         }
         case ND_LOG_AND:{
-            int label_end = label_num;
-            label_num++;
+            int label_end = label_num++;
 
             gen_expr(nd->op1);
             printf("    pop rax\n");
